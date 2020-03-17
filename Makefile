@@ -9,13 +9,14 @@ MKRESCUEFLAGS = -d /usr/lib/grub/i386-pc
 all:
 	gcc -c main.c $(CFLAGS)
 	nasm -felf64 boot.s
+	nasm -felf64 long_mode_init.s
 	gcc -c multiboot.s $(CFLAGS)
-	ld -n multiboot.o boot.o main.o -o $(PROJECT) $(LDFLAGS) 
+	ld -n *.o -o $(PROJECT) $(LDFLAGS) 
 qemu: all
 	@cp $(PROJECT) $(ISODIR)/boot
 	@echo "### BUILDING BOOTABLE ISO ###"
 	grub-mkrescue $(MKRESCUEFLAGS) -o $(ISONAME) $(ISODIR)
 	@echo "### STARTING QEMU ###"
-	qemu-system-x86_64 -cdrom $(ISONAME)
+	qemu-system-x86_64 -no-reboot -cdrom $(ISONAME)
 clean:
 	- rm -f *.o $(PROJECT) $(ISONAME) $(ISODIR)/boot/$(PROJECT)

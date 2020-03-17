@@ -2,7 +2,7 @@
 #define VGA_WIDTH  80
 #define VGA_HEIGHT 25
 
-unsigned char stack [ 0x1000 ];
+unsigned char stack [ 0x100000 ];
 
 const char* msg = "UwU";
 unsigned char* term_buff = (unsigned char*) VGA_BUF_ADDR;
@@ -20,8 +20,8 @@ void clear_screen(){
   for(unsigned int i=0; i < VGA_HEIGHT; i++){
     for(unsigned int j=0; j < VGA_WIDTH; j++){
 
-      term_buff[(i * VGA_HEIGHT) + j] = clr;
-      term_buff[(i * VGA_HEIGHT) + j + 1] = 0;
+      term_buff[(i * VGA_HEIGHT) + j] = 0;
+      term_buff[(i * VGA_HEIGHT) + j + 1] = clr;
 
     }
   }
@@ -34,15 +34,13 @@ void write_string(const char* str, unsigned char forecolor, unsigned char backco
 
   unsigned int n = strlen(str);
 
-  for(unsigned int i=0; i < n; i++){
-    
-    term_buff[(y * VGA_HEIGHT) + x] = str[i];
-    term_buff[(y * VGA_HEIGHT) + x + 1] = attrib;
-
-
+  for(unsigned int i=0, j=0; i < n; i++, j+=2){
+    term_buff[(y * VGA_HEIGHT) + j] = str[i];
+    term_buff[(y * VGA_HEIGHT) + j + 1] = attrib;
     x++;
     if(x >= VGA_WIDTH){
       x = 0;
+      j = 0;
       y++;
     }
   }
@@ -51,5 +49,5 @@ void write_string(const char* str, unsigned char forecolor, unsigned char backco
 
 void kernel_start(void){
   clear_screen();
-  write_string(msg, 0x2, 0x1);
+  write_string(msg, 0xF, 0x0);
 }
