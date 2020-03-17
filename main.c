@@ -1,6 +1,6 @@
 #define VGA_BUF_ADDR 0xB8000
-#define VGA_WIDTH  80
-#define VGA_HEIGHT 25
+#define VGA_WIDTH  80 * 2
+#define VGA_HEIGHT 25 * 2
 
 unsigned char stack [ 0x100000 ];
 
@@ -18,10 +18,10 @@ void clear_screen(){
   char clr = ' ';
  
   for(unsigned int i=0; i < VGA_HEIGHT; i++){
-    for(unsigned int j=0; j < VGA_WIDTH; j++){
+    for(unsigned int j=0; j < VGA_WIDTH ; j+=2){
 
-      term_buff[(i * VGA_HEIGHT) + j] = 0;
-      term_buff[(i * VGA_HEIGHT) + j + 1] = clr;
+      term_buff[(i * VGA_HEIGHT) + j] = clr;
+      term_buff[(i * VGA_HEIGHT) + j + 1] = 0;
 
     }
   }
@@ -34,13 +34,12 @@ void write_string(const char* str, unsigned char forecolor, unsigned char backco
 
   unsigned int n = strlen(str);
 
-  for(unsigned int i=0, j=0; i < n; i++, j+=2){
-    term_buff[(y * VGA_HEIGHT) + j] = str[i];
-    term_buff[(y * VGA_HEIGHT) + j + 1] = attrib;
-    x++;
+  for(unsigned int i=0; i < n; i++, x+=2){
+    term_buff[(y * VGA_HEIGHT) + x] = str[i];
+    term_buff[(y * VGA_HEIGHT) + x + 1] = attrib;
+
     if(x >= VGA_WIDTH){
       x = 0;
-      j = 0;
       y++;
     }
   }
