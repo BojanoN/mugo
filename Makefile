@@ -2,7 +2,7 @@ PROJECT = os.elf
 
 ARCH = amd64
 
-DIRS := ./kern ./arch/$(ARCH)/boot ./arch/$(ARCH)/driver
+DIRS := ./kern ./arch/$(ARCH)/boot ./arch/$(ARCH)/drivers ./lib
 FILES := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.c $(dir)/*.s))
 
 C_FILES := $(filter %.c ,$(FILES))
@@ -13,11 +13,13 @@ ASM_OBJS := $(ASM_FILES:.s=.o)
 
 LDSCRIPT = ./arch/$(ARCH)/link.ld
 
+INCLUDEDIR = ./include
+
 NASM = nasm
 NASMFLAGS = -felf64
 
 CC = gcc
-CFLAGS = -m64 -march=x86-64 -Wall -Werror -ffreestanding -nostdlib -fno-stack-protector -fno-pie -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2
+CFLAGS = -I $(INCLUDEDIR) -m64 -march=x86-64 -Wall -Werror -ffreestanding -nostdlib -fno-stack-protector -fno-pie -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 LDFLAGS =  -T $(LDSCRIPT)
 
 ISODIR = ./iso
