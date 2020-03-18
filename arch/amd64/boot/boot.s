@@ -26,7 +26,7 @@ section .text
 
 
 vga_buf equ 0xb8000
-color equ 0x0f ; the color byte for each character
+color equ 0x0f
 
 multiboot_err db	'Multiboot structure not loaded!'
 cpuid_err db	'CPUID not supported!'
@@ -67,7 +67,7 @@ error:
 	call print_string
 	jmp error
 
-.no_longmode
+.no_longmode:
 	mov edx, longmode_err
 	call print_string
 	jmp error
@@ -119,7 +119,7 @@ arch_start:
   mov ecx, 256
   mov ebx, 0
 
-  .fill_pd
+.fill_pd:
 	mov eax, 0x200000
   mul ebx
 	or eax, 0b10000011

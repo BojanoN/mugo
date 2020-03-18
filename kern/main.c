@@ -43,7 +43,6 @@ void write_string(const char* str, unsigned char forecolor, unsigned char backco
       y++;
     }
   }
-
 }
 
 void kernel_start(void){
