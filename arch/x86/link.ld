@@ -14,6 +14,7 @@ SECTIONS {
 
          .bss :{
                *(.bss)
+		           . = ALIGN (4096);
          }
 
          .rodata :{

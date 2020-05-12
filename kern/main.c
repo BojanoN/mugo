@@ -3,7 +3,7 @@
 
 unsigned char stack [ 0x100000 ];
 
-const char* msg = "UwU";
+const char* msg = "Hi!";
 
 void kernel_start(void){
   vga_clear_screen();

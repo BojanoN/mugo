@@ -1,6 +1,8 @@
 PROJECT = os.elf
 
-ARCH = amd64
+ARCH = x86
+
+include arch/$(ARCH)/config
 
 DIRS := ./kern ./arch/$(ARCH)/boot ./arch/$(ARCH)/drivers ./lib
 FILES := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.c $(dir)/*.s))
@@ -11,24 +13,22 @@ C_OBJS := $(C_FILES:.c=.o)
 ASM_FILES := $(filter %.s ,$(FILES))
 ASM_OBJS := $(ASM_FILES:.s=.o)
 
-LDSCRIPT = ./arch/$(ARCH)/link.ld
-
-INCLUDEDIR = ./include
-
+# Compilation settings
 NASM = nasm
-NASMFLAGS = -felf64
 
-CC = gcc
-CFLAGS = -I $(INCLUDEDIR) -m64 -march=x86-64 -Wall -Werror -ffreestanding -nostdlib -fno-stack-protector -fno-pie -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2
-LDFLAGS =  -T $(LDSCRIPT)
+CC = clang
+INCLUDEDIR = ./include
+CFLAGS += -I $(INCLUDEDIR)
+
+LDSCRIPT = ./arch/$(ARCH)/link.ld
+LDFLAGS +=  -T $(LDSCRIPT)
 
 ISODIR = ./iso
 ISONAME = os.iso
-
 MKRESCUEFLAGS = -d /usr/lib/grub/i386-pc
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS) -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.s
 	$(NASM) $(NASMFLAGS) $< -o $@
@@ -41,7 +41,7 @@ qemu: all
 	@echo "### BUILDING BOOTABLE ISO ###"
 	grub-mkrescue $(MKRESCUEFLAGS) -o $(ISONAME) $(ISODIR)
 	@echo "### STARTING QEMU ###"
-	qemu-system-x86_64 -no-reboot -cdrom $(ISONAME)
+	$(QEMU) -no-reboot -cdrom $(ISONAME)
 
 clean:
 	- rm -f $(PROJECT) $(ISONAME) $(ISODIR)/boot/$(PROJECT) $(C_OBJS) $(ASM_OBJS)
