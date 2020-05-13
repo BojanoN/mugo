@@ -1,4 +1,4 @@
-extern kernel_start, stack
+extern init, stack
 
 global arch_start
 
@@ -7,9 +7,8 @@ bits 32
 vga_buf equ 0xb8000
 color equ 0x0f
 
-multiboot_err db	'Multiboot structure not loaded!'
-boot_msg db	'Jumping to kernel_start...'
-
+multiboot_err db	'Multiboot structure not loaded!', 0
+boot_msg db	'Jumping to kernel_start...', 0
 
 print_string:
     pusha
@@ -48,8 +47,9 @@ arch_start:
 	cmp eax, 0x36d76289
 	jne error.no_multiboot
 
+
   mov edx, boot_msg
   call print_string
 
-  call kernel_start
+  call init
   jmp $

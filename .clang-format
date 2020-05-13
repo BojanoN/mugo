@@ -1,0 +1,4 @@
+BasedOnStyle: webkit
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true

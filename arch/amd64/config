@@ -1,4 +1,4 @@
-CFLAGS := -m64 -march=x86-64 -Wall -Werror -ffreestanding -nostdlib -fno-stack-protector -fno-pie -mcmodel=large -mno-red-zone -fno-plt -fno-pic -mno-mmx -mno-sse -mno-sse2 -DDEBUG
+CFLAGS := -m64 -march=x86-64 -Wall -Werror -ffreestanding -nostdlib -fno-stack-protector -fno-pie -mcmodel=large -mno-red-zone -fno-plt -fno-pic -mno-mmx -mno-sse -mno-sse2 
 QEMU = qemu-system-x86_64
 NASMFLAGS = -felf64
 LDFLAGS := -melf_x86_64
