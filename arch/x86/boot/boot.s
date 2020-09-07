@@ -41,7 +41,7 @@ error:
 
 
 arch_start:
-  mov esp, stack
+  mov esp, stack + 0x10000
 
   ;; Check if multiboot was loaded
 	cmp eax, 0x36d76289

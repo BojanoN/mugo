@@ -1,5 +1,5 @@
 #include "printf.h"
 
-void printf(char* fmt, ...)
+void vsprintf(char* buf, const char* fmt, va_list args)
 {
 }

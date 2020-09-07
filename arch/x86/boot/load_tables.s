@@ -9,6 +9,7 @@ load_idt:
 load_gdt:
   mov eax, [esp + 4]
   lgdt [eax]
+  
 cleanup:
   mov ax, 0x10
   mov ds, ax

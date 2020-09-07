@@ -1,9 +1,8 @@
 ENTRY(arch_start)
 
 SECTIONS {
-         . = 1M;
 
-         .boot :{
+         .boot 0x100000:{
                *(.multiboot)
                *(.arch_start)
          }
