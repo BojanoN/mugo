@@ -79,11 +79,13 @@ void console_write_string(const char* str)
 
         if (str[i] == '\n') {
             y++;
+            i++;
             x = 0;
             continue;
         }
         if (str[i] == '\r') {
             x = 0;
+            i++;
             continue;
         }
 

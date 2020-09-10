@@ -21,7 +21,7 @@ NASM = nasm
 
 CC = gcc
 INCLUDEDIR = ./include
-CFLAGS += -I $(INCLUDEDIR) -I arch/$(ARCH)/include
+CFLAGS += -I $(INCLUDEDIR) -I arch/$(ARCH)/include -I ./
 
 LDSCRIPT = ./arch/$(ARCH)/link.ld
 LDFLAGS +=  -T $(LDSCRIPT)
