@@ -8,9 +8,7 @@ const char* msg = "Hi!\n";
 void kernel_start(void)
 {
     console_init();
-    /*console_write_string(msg);
-    console_write_string("Halting..\n");
-  */
 
-    kprintf("%s %c\n", msg, '?');
+    kprintf("%s %c %d\n", msg, '?', 42);
+    asm volatile("int $0x3");
 }

@@ -1,7 +1,7 @@
 #include "idt.h"
 #include "include/interrupt.h"
 
-idt_entry_t idt_entries[256];
+idt_entry_t idt_entries[256] = { 0 };
 idt_t       idt;
 
 extern void irh0(void);
@@ -44,7 +44,7 @@ static void fill_idt_entry(uint32_t num, uint32_t offset, uint16_t selector, uin
     idt_entry_t* tmp = &idt_entries[num];
 
     tmp->offset_low  = offset & 0xFFFF;
-    tmp->offset_high = offset & 0xFFFF0000;
+    tmp->offset_high = (offset >> 16) & 0xFFFF;
 
     tmp->selector = selector;
     tmp->zero     = 0;

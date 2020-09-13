@@ -18,12 +18,12 @@ irh%1:
 extern interrupt_handler
 
 irh_common:
-	   pusha                    ; Save context
+	   pusha
 
 	   mov ax, ds
-	   push eax                 ; save the data segment descriptor
+	   push eax
 
-	   mov ax, 0x10               ; Load kernel segment descriptors
+	   mov ax, 0x10
 	   mov ds, ax
 	   mov es, ax
 	   mov fs, ax
@@ -31,14 +31,14 @@ irh_common:
 
 	   call interrupt_handler
 
-	   pop eax        ; reload the original data segment descriptor
+	   pop eax
 	   mov ds, ax
 	   mov es, ax
 	   mov fs, ax
 	   mov gs, ax
 
-	   popa                     ; Pops edi,esi,ebp...
-	   add esp, 8     ; Cleans up the pushed error code and pushed ISR number
+	   popa
+	   add esp, 8
 	   sti
 	   iret
 
