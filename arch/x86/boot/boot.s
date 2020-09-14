@@ -47,6 +47,9 @@ arch_start:
 	cmp eax, 0x36d76289
 	jne error.no_multiboot
 
+	push	0
+	popf
+
 
   mov edx, boot_msg
   call print_string

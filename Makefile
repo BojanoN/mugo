@@ -63,8 +63,8 @@ qemu-debug: debug iso-debug
 	@echo "### STARTING QEMU ###"
 	$(QEMU) -s -S -no-reboot -cdrom $(ISONAME)
 
-gdb-debug: debug
-	gdb -s $(PROJECT) -ex 'target remote localhost:1234'
+gdb: debug
+	cgdb -s $(PROJECT) -ex 'target remote localhost:1234'
 
 
 clean:

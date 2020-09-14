@@ -10,13 +10,14 @@ static void fill_gdt_entry(int32_t segment_num, uint32_t base, uint32_t limit, u
     gdt_entry_t* tmp = &gdt_entries[segment_num];
 
     tmp->base_low    = base & 0xFFFF;
-    tmp->base_middle = base & 0xFF0000;
-    tmp->base_high   = base & 0xFF000000;
+    tmp->base_middle = (base >> 16) & 0xFF;
+    tmp->base_high   = (base >> 24) & 0xFF;
 
     tmp->limit_low = limit & 0xFFFF;
 
     tmp->access      = access;
-    tmp->granularity = granularity;
+    tmp->granularity = (limit >> 16) & 0x0F;
+    tmp->granularity |= granularity;
 }
 
 void init_gdt(void)

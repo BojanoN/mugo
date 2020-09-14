@@ -9,7 +9,8 @@ load_idt:
 load_gdt:
   mov eax, [esp + 4]
   lgdt [eax]
-  
+  jmp 0x08:cleanup
+
 cleanup:
   mov ax, 0x10
   mov ds, ax
