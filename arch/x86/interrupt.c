@@ -52,6 +52,11 @@ void exception_handler(irq_context_t context)
     return;
 }
 
+void register_interrupt_callback(uint8_t num, irq_callback cb)
+{
+    callback[num] = cb;
+}
+
 void interrupt_handler(irq_context_t context)
 {
     if (PIC_check_spurious()) {
@@ -63,8 +68,9 @@ void interrupt_handler(irq_context_t context)
     PIC_sendEOI(interrupt_num);
 
     if (interrupt_num < NO_INTERRUPTS && callback[interrupt_num]) {
-        callback[interrupt_num](interrupt_num);
+        callback[interrupt_num](context);
     }
+
     kprintf("Received interrupt %d \n", interrupt_num);
     return;
 }
