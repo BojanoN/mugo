@@ -1,5 +1,5 @@
 #include "idt.h"
-#include "include/interrupt.h"
+#include <arch/interrupt.h>
 
 idt_entry_t idt_entries[256] = { 0 };
 idt_t       idt;
@@ -71,6 +71,8 @@ static void fill_idt_entry(uint32_t num, uint32_t offset, uint16_t selector, uin
 
 void init_idt(void)
 {
+    disable_interrupts();
+
     idt.limit = (sizeof(idt_entry_t) * 256) - 1;
     idt.base  = (uint32_t)&idt_entries;
 
@@ -127,4 +129,6 @@ void init_idt(void)
     fill_idt_entry(47, (uint32_t)irq15, 0x08, 0x8E);
 
     load_idt((uint32_t)&idt);
+
+    enable_interrupts();
 }

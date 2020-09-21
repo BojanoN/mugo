@@ -1,9 +1,7 @@
 #include "timer.h"
-#include "../include/interrupt.h"
 #include "../util.h"
+#include <arch/interrupt.h>
 #include <kern/kprint.h>
-
-#define TIMER_IRQ_NUM 0
 
 #define PIT_CMD           0x43
 #define PIT_DATA_CHANNEL0 0x40
@@ -24,7 +22,7 @@ static void timer_irq_handler(irq_context_t ctx)
 
 void init_timer(uint32_t frequency)
 {
-    register_interrupt_callback(TIMER_IRQ_NUM, timer_irq_handler);
+    register_interrupt_callback(IRQ0, &timer_irq_handler);
 
     uint32_t d = PIT_FREQ / frequency;
 
@@ -32,4 +30,6 @@ void init_timer(uint32_t frequency)
 
     outb(PIT_DATA_CHANNEL0, (uint8_t)(d & 0xFF));
     outb(PIT_DATA_CHANNEL0, (uint8_t)((d >> 8) & 0xFF));
+
+    arch_unmask_irq(IRQ0);
 }

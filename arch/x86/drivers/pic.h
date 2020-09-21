@@ -2,9 +2,9 @@
 
 #include <types.h>
 
-void     PIC_sendEOI(uint8_t irqnum);
-void     PIC_mask_irq(uint8_t irqnum);
-void     PIC_unmask_irq(uint8_t irqnum);
+void     PIC_sendEOI(uint16_t irqnum);
+void     PIC_mask_irq(uint16_t irqnum);
+void     PIC_unmask_irq(uint16_t irqnum);
 void     PIC_init(void);
 uint32_t PIC_check_spurious(void);
 

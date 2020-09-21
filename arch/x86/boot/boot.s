@@ -1,4 +1,4 @@
-extern init, stack
+extern arch_entrypoint, stack
 
 global arch_start
 
@@ -54,5 +54,5 @@ arch_start:
   mov edx, boot_msg
   call print_string
 
-  call init
+  call arch_entrypoint
   jmp $

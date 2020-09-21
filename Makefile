@@ -39,6 +39,9 @@ MKRESCUEFLAGS = -d /usr/lib/grub/i386-pc
 %.ld : %.ld.pre
 	$(CC) $(CFLAGS) -E -x c $< | grep -v "^#" > $@
 
+%.h : %.h.pre
+	
+
 all: $(PROCESSED_LD_FILES) $(ASM_OBJS) $(C_OBJS)
 	ld -n $(ASM_OBJS) $(C_OBJS) -o $(PROJECT) $(LDFLAGS)
 

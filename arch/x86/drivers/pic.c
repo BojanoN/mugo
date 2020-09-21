@@ -1,5 +1,6 @@
 #include "pic.h"
 #include "../util.h"
+#include <arch/interrupt.h>
 
 #define MASTER_PIC                0x20
 #define SLAVE_PIC                 0xA0
@@ -22,8 +23,9 @@
 #define ICW4_8086 0x01
 
 #define SLAVE_IRQNUM_BEGIN 40
+#define IRQ_OFFSET         32
 
-void PIC_sendEOI(uint8_t irqnum)
+void PIC_sendEOI(uint16_t irqnum)
 {
     if (irqnum >= SLAVE_IRQNUM_BEGIN) {
         outb(SLAVE_PIC_COMMAND, PIC_EOI);
@@ -33,12 +35,14 @@ void PIC_sendEOI(uint8_t irqnum)
 
 void PIC_init(void)
 {
+    disable_interrupts();
+
     uint8_t init_seq_flags = ICW1_INIT | ICW1_ICW4;
 
     uint8_t master_mask, slave_mask;
 
-    master_mask = inb(MASTER_PIC_DATA);
-    slave_mask  = inb(SLAVE_PIC_DATA);
+    master_mask = (0xFF ^ (1 << SLAVE_PIC_MASTER_IRQ_LINE));
+    slave_mask  = 0xFF;
 
     // Start initialization sequence
     outb(MASTER_PIC_COMMAND, init_seq_flags);
@@ -49,7 +53,7 @@ void PIC_init(void)
     outb(SLAVE_PIC_DATA, SLAVE_PIC_IRQ_OFFSET);
 
     // Set slave PIC to master's IRQ2
-    outb(MASTER_PIC_DATA, 0x4);
+    outb(MASTER_PIC_DATA, (1 << SLAVE_PIC_MASTER_IRQ_LINE));
     outb(SLAVE_PIC_DATA, 0x2);
 
     outb(MASTER_PIC_DATA, ICW4_8086);
@@ -57,12 +61,16 @@ void PIC_init(void)
 
     outb(MASTER_PIC_DATA, master_mask);
     outb(SLAVE_PIC_DATA, slave_mask);
+
+    enable_interrupts();
 }
 
-void PIC_mask_irq(uint8_t irqnum)
+void PIC_mask_irq(uint16_t irqnum)
 {
     uint8_t  val  = 0;
     uint16_t port = MASTER_PIC_DATA;
+
+    irqnum -= IRQ_OFFSET;
 
     // Check if slave PIC caused the interrupt
     if (irqnum >= 8) {
@@ -77,10 +85,12 @@ void PIC_mask_irq(uint8_t irqnum)
     outb(port, val);
 }
 
-void PIC_unmask_irq(uint8_t irqnum)
+void PIC_unmask_irq(uint16_t irqnum)
 {
     uint8_t  val  = 0;
     uint16_t port = MASTER_PIC_DATA;
+
+    irqnum -= IRQ_OFFSET;
 
     // Check if slave PIC caused the interrupt
     if (irqnum >= 8) {

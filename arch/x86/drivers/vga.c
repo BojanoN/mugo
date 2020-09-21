@@ -14,7 +14,7 @@ static uint32_t y = 0;
 static uint32_t cursor_x = 0;
 static uint32_t cursor_y = 0;
 
-// TODO vga color enum
+// TODO Refactor this
 static uint8_t color_attrib = (0x0 << 4) | 0xF;
 
 void console_init()
@@ -67,10 +67,6 @@ void console_scroll()
     }
 }
 
-void console_write_number(uint32_t num)
-{
-}
-
 void console_write_string(const char* str)
 {
     unsigned int n = strlen(str);
@@ -95,6 +91,10 @@ void console_write_string(const char* str)
         if (x >= VGA_WIDTH) {
             x = 0;
             y++;
+        }
+
+        if (y >= VGA_HEIGHT) {
+            console_scroll();
         }
     }
 

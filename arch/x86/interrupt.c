@@ -1,10 +1,10 @@
-#include "include/interrupt.h"
 #include "drivers/pic.h"
+#include <arch/interrupt.h>
 #include <kern/kprint.h>
 
 #define NO_EXCEPTIONS 32
 
-irq_callback callback[NO_INTERRUPTS] = { 0 };
+static irq_callback callback[NO_INTERRUPTS] = { 0 };
 
 static char* exception_string[NO_EXCEPTIONS] = {
     "Divide by zero",
@@ -39,7 +39,6 @@ static char* exception_string[NO_EXCEPTIONS] = {
 
 void exception_handler(irq_context_t context)
 {
-
     if (PIC_check_spurious()) {
         return;
     }
@@ -65,12 +64,13 @@ void interrupt_handler(irq_context_t context)
 
     uint32_t interrupt_num = context.int_no;
 
-    PIC_sendEOI(interrupt_num);
+    kprintf("Received interrupt %d \n", interrupt_num);
 
     if (interrupt_num < NO_INTERRUPTS && callback[interrupt_num]) {
         callback[interrupt_num](context);
     }
 
-    kprintf("Received interrupt %d \n", interrupt_num);
+    PIC_sendEOI(interrupt_num);
+
     return;
 }

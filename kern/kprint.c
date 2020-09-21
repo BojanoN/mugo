@@ -1,4 +1,5 @@
 #include "kprint.h"
+#include <arch/interrupt.h>
 #include <stdlib.h>
 
 unsigned int kprintf(char* fmt, ...)
