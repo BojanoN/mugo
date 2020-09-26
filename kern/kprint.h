@@ -4,4 +4,4 @@
 
 #define KPRINT_BUFF_LEN 1024
 
-unsigned int kprintf(char* fmt, ...);
+unsigned int kprintf(const char* fmt, ...);

@@ -7,7 +7,6 @@ bits 32
 vga_buf equ 0xb8000
 color equ 0x0f
 
-multiboot_err db	'Multiboot structure not loaded!', 0
 boot_msg db	'Jumping to kernel_start...', 0
 
 print_string:
@@ -34,25 +33,20 @@ print_string:
 error:
   hlt
 
-.no_multiboot:
-  mov edx, multiboot_err
-  call print_string
-  jmp error
 
 
 arch_start:
   mov esp, stack + 0x10000
 
-  ;; Check if multiboot was loaded
-	cmp eax, 0x36d76289
-	jne error.no_multiboot
 
 	push	0
 	popf
 
-
   mov edx, boot_msg
   call print_string
+
+  push ebx
+  push eax
 
   call arch_entrypoint
   jmp $

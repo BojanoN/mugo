@@ -1,6 +1,6 @@
 #include "timer.h"
-#include "../util.h"
 #include <arch/interrupt.h>
+#include <arch/util.h>
 #include <kern/kprint.h>
 
 #define PIT_CMD           0x43

@@ -1,5 +1,7 @@
 #pragma once
 
-unsigned int vsprintf(char* buf, size_t size, char** args);
+#include <stdarg.h>
+
+unsigned int vsprintf_s(char* buf, size_t size, const char* fmt, va_list args);
 
 unsigned int strlen(const char* str);

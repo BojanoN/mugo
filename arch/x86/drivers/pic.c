@@ -1,6 +1,6 @@
 #include "pic.h"
-#include "../util.h"
 #include <arch/interrupt.h>
+#include <arch/util.h>
 
 #define MASTER_PIC                0x20
 #define SLAVE_PIC                 0xA0

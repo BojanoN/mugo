@@ -28,13 +28,10 @@ static void itoa(unsigned int num, char* buf, size_t size)
     }
 }
 
-unsigned int vsprintf(char* dstbuf, size_t size, char** args)
+unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args)
 {
     char*        s;
-    char*        fmt     = *args;
     unsigned int written = 0;
-
-    args++;
 
     for (; *fmt && (written < (size - 1)); fmt++) {
 
@@ -50,8 +47,7 @@ unsigned int vsprintf(char* dstbuf, size_t size, char** args)
         case 's': {
             int len;
 
-            s = *args;
-            args++;
+            s = va_arg(args, char*);
 
             if (!s) {
                 s   = "null";
@@ -75,18 +71,16 @@ unsigned int vsprintf(char* dstbuf, size_t size, char** args)
             break;
         }
         case 'c': {
-            *dstbuf = *((char*)args);
+            *dstbuf = (unsigned char)va_arg(args, int);
             dstbuf++;
 
-            args++;
             written++;
             break;
         }
         case 'd':
         case 'u': {
             char num_buf[NUM_BUF_MAX];
-            int  num = *((int*)args);
-            args++;
+            int  num = va_arg(args, unsigned int);
 
             itoa(num, num_buf, NUM_BUF_MAX);
             char* tmp = num_buf;
