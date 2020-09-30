@@ -8,4 +8,4 @@ typedef struct page {
     uint32_t dirty : 1; // Has the page been written to since last refresh?
     uint32_t unused : 7; // Amalgamation of unused and reserved bits
     uint32_t frame : 20; // Frame address (shifted right 12 bits)
-} page_t;
+} arch_page_t;

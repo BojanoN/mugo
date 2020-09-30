@@ -2,17 +2,23 @@
 #include <string.h>
 #include <types.h>
 
-static const uint16_t VGA_WIDTH  = 80 * 2;
+typedef struct __attribute__((packed)) {
+    uint8_t character;
+    uint8_t color_attrib;
+} vga_char_t;
+
+static const uint16_t VGA_WIDTH  = 80;
 static const uint16_t VGA_HEIGHT = 25;
+static const uint16_t VGA_TOTAL  = VGA_HEIGHT * VGA_WIDTH;
 
-static uint8_t* term_buff    = (uint8_t*)0xB8000;
-static uint8_t* vga_cmd_port = (uint8_t*)0x3D4;
+static vga_char_t* term_buff    = (vga_char_t*)0xB8000;
+static uint8_t*    vga_cmd_port = (uint8_t*)0x3D4;
 
-static uint32_t x = 0;
-static uint32_t y = 0;
+static uint16_t x = 0;
+static uint16_t y = 0;
 
-static uint32_t cursor_x = 0;
-static uint32_t cursor_y = 0;
+static uint16_t cursor_x = 0;
+static uint16_t cursor_y = 0;
 
 // TODO Refactor this
 static uint8_t color_attrib = (0x0 << 4) | 0xF;
@@ -38,13 +44,11 @@ void console_move_cursor(uint16_t x, uint16_t y)
 
 void console_clear_screen()
 {
-    char clr = ' ';
 
-    for (unsigned int i = 0; i < VGA_HEIGHT; i++) {
-        for (unsigned int j = 0; j < VGA_WIDTH; j += 2) {
-            term_buff[(i * VGA_WIDTH) + j]     = clr;
-            term_buff[(i * VGA_WIDTH) + j + 1] = 0;
-        }
+    vga_char_t clr = { ' ', 0 };
+
+    for (unsigned int i = 0; i < VGA_TOTAL; i++) {
+        term_buff[i] = clr;
     }
 }
 
@@ -55,15 +59,14 @@ void console_set_color(uint8_t forecolor, uint8_t backcolor)
 
 void console_scroll()
 {
-    for (unsigned int i = 0; (i + 1) < VGA_HEIGHT; i++) {
-        for (unsigned int j = 0; j < VGA_WIDTH; j++) {
-            term_buff[(i * VGA_WIDTH) + j] = term_buff[((i + 1) * VGA_WIDTH) + j];
-        }
+    vga_char_t clr = { ' ', 0 };
+
+    for (unsigned int i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
+        term_buff[i] = term_buff[i + VGA_WIDTH];
     }
 
-    for (unsigned int j = 0; j < VGA_WIDTH; j += 2) {
-        term_buff[(24 * VGA_WIDTH) + j]     = ' ';
-        term_buff[(24 * VGA_WIDTH) + j + 1] = 0;
+    for (unsigned int j = VGA_WIDTH * (VGA_HEIGHT - 1); j < VGA_TOTAL; j++) {
+        term_buff[j] = clr;
     }
 }
 
@@ -71,7 +74,11 @@ void console_write_string(const char* str)
 {
     unsigned int n = strlen(str);
 
-    for (unsigned int i = 0; i < n; i++, x += 2) {
+    vga_char_t chr;
+
+    chr.color_attrib = color_attrib;
+
+    for (unsigned int i = 0; i < n; i++) {
 
         if (str[i] == '\n') {
             y++;
@@ -85,8 +92,9 @@ void console_write_string(const char* str)
             continue;
         }
 
-        term_buff[(y * VGA_WIDTH) + x]     = str[i];
-        term_buff[(y * VGA_WIDTH) + x + 1] = color_attrib;
+        chr.character = str[i];
+
+        term_buff[(y * VGA_WIDTH) + x] = chr;
 
         if (x >= VGA_WIDTH) {
             x = 0;
@@ -96,6 +104,8 @@ void console_write_string(const char* str)
         if (y >= VGA_HEIGHT) {
             console_scroll();
         }
+
+        x++;
     }
 
     console_move_cursor(x, y);

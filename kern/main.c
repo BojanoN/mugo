@@ -1,10 +1,13 @@
 #include <arch/info.h>
 #include <arch/multiboot2.h>
+#include <arch/paging.h>
 #include <arch/util.h>
 #include <kern/kprint.h>
 #include <string.h>
 
 unsigned char stack[0x10000];
+
+page_table_t page_table;
 
 const char* msg = "Hi!\n";
 

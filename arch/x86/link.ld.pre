@@ -1,30 +1,33 @@
 ENTRY(arch_start)
 
-SECTIONS {
+K_BOOT_VMA = 0x00100000;
+K_HIGH_VMA = 0xC0000000;
 
-         .boot 0x100000:{
+SECTIONS {
+         . = K_BOOT_VMA;
+
+         .boot :{
                *(.multiboot)
          }
 
-         .text :{
+         
+         . += K_HIGH_VMA;
+         __kernel_start = .;
+         .text ALIGN(4K) : AT(ADDR (.text) - K_HIGH_VMA) {
                *(.text)
          }
 
-         .bss :{
+         .bss ALIGN(4K) : AT(ADDR (.bss) - K_HIGH_VMA){
                *(.bss)
-		           . = ALIGN (4096);
          }
 
-         .rodata :{
-               *(.rodata*)
+         .rodata ALIGN(4K) : AT(ADDR (.rodata) - K_HIGH_VMA){
+               *(.rodata)
          }
 
-         .data :{
+         .data ALIGN(4K) : AT(ADDR (.data) - K_HIGH_VMA){
                *(.data)
          }
-         #ifndef DEBUG
-         /DISCARD/:{
-               *(.*)
-         }
-         #endif
+
+         __kernel_end = .;         
 }
