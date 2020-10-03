@@ -39,13 +39,12 @@ MKRESCUEFLAGS = -d /usr/lib/grub/i386-pc
 %.ld : %.ld.pre
 	$(CC) $(CFLAGS) -E -x c $< | grep -v "^#" > $@
 
-%.h : %.h.pre
-	
 
 all: $(PROCESSED_LD_FILES) $(ASM_OBJS) $(C_OBJS)
 	ld -n $(ASM_OBJS) $(C_OBJS) -o $(PROJECT) $(LDFLAGS)
 
-debug: CFLAGS += -g -DDEBUG
+debug: CFLAGS += -g -DDEBUG -O0
+debug: NASMFLAGS+= -g -O0
 debug: all
 
 iso: all
@@ -71,4 +70,4 @@ gdb: debug
 
 
 clean:
-	- rm -f $(PROJECT) $(ISONAME) $(ISODIR)/boot/$(PROJECT) $(C_OBJS) $(ASM_OBJS) $(PROCESSED_LD_FILES)
+	- rm -f $(PROJECT) $(ISONAME) $(ISODIR)/boot/$(PROJECT) $(C_OBJS) $(ASM_OBJS)

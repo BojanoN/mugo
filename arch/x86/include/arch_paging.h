@@ -1,11 +1,20 @@
 #pragma once
+#include <types.h>
 
-typedef struct page {
-    uint32_t present : 1; // Page present in memory
-    uint32_t rw : 1; // Read-only if clear, readwrite if set
-    uint32_t user : 1; // Supervisor level only if clear
-    uint32_t accessed : 1; // Has the page been accessed since last refresh?
-    uint32_t dirty : 1; // Has the page been written to since last refresh?
-    uint32_t unused : 7; // Amalgamation of unused and reserved bits
-    uint32_t frame : 20; // Frame address (shifted right 12 bits)
-} arch_page_t;
+typedef uint32_t arch_pt_entry_t;
+typedef uint32_t arch_pd_entry_t;
+
+void arch_enable_paging(void);
+void arch_load_pagetable(uint32_t pt_phys_addr);
+
+#define ARCH_PAGE_SIZE 4096
+
+#define ARCH_VADDR_PD_OFFSET_MASK   0xFFC00000
+#define ARCH_VADDR_PT_OFFSET_MASK   0x003FF000
+#define ARCH_VADDR_PAGE_OFFSET_MASK 0x00000FFF
+
+#define ARCH_PD_ENTRY_PRESENT 0x1
+#define ARCH_PD_ENTRY_RW      0x2
+
+#define ARCH_PAGE_PRESENT ARCH_PD_ENTRY_PRESENT
+#define ARCH_PAGE_RW      ARCH_PD_ENTRY_RW

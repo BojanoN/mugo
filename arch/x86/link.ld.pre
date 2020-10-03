@@ -1,4 +1,4 @@
-ENTRY(arch_start)
+ENTRY(_start)
 
 K_BOOT_VMA = 0x00100000;
 K_HIGH_VMA = 0xC0000000;
@@ -6,11 +6,19 @@ K_HIGH_VMA = 0xC0000000;
 SECTIONS {
          . = K_BOOT_VMA;
 
-         .boot :{
+         .boot_data :{
                *(.multiboot)
+               *(.boot.data)
          }
 
-         
+         .boot_text : {
+               *(.boot.text)
+         }
+
+         .boot_bss: {
+               *(.boot.page_tables)
+         }
+
          . += K_HIGH_VMA;
          __kernel_start = .;
          .text ALIGN(4K) : AT(ADDR (.text) - K_HIGH_VMA) {

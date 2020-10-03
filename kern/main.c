@@ -1,5 +1,4 @@
 #include <arch/info.h>
-#include <arch/multiboot2.h>
 #include <arch/paging.h>
 #include <arch/util.h>
 #include <kern/kprint.h>
@@ -26,12 +25,8 @@ void kernel_start(void)
     asm volatile("int $0x3");
 }
 
-void kernel_init(arch_info_t* info, unsigned long magic, unsigned long multiboot_tag_addr)
+void kernel_init(arch_info_t* info)
 {
-
-    if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
-        panic("Multiboot2 header magic invalid!");
-    }
 
     arch_info = info;
     arch_info->init();

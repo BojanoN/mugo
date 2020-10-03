@@ -1,26 +1,21 @@
 global init_paging
+extern __kernel_start, __kernel_end, K_HIGH_VMA
+
+
   ;; Dont zero init, just allocate space
 section .boot_page_tables, 	nobits
 
-extern __kernel_start, __kernel_end
-
-UPPER_HALF: equ 0xC0000000
-
 align 4096
 page_directory:
-   resb 4096
-page_table:
-   resb 4096
+  resb 4096
+kernel_pt:
+  resb 4096
+boot_pt:
+  resb 4096
 
-section  .text
-  %macro k_phys 1
-     mov %1, (__kernel_start - UPPER_HALF)
-  %endmacro
+section  .boot.text
 
-init_paging:
-
-  k_phys eax
-
+_start: 
 
 .fill_pd:
 	 loop .fill_pd
