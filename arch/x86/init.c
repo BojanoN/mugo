@@ -17,7 +17,6 @@ void init(void)
     PIC_init();
     init_idt();
     //init_timer(10000);
-    //init_paging();
 }
 
 void arch_entrypoint(unsigned long magic, unsigned long multiboot_tag_addr)

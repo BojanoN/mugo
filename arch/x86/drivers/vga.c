@@ -11,8 +11,8 @@ static const uint16_t VGA_WIDTH  = 80;
 static const uint16_t VGA_HEIGHT = 25;
 static const uint16_t VGA_TOTAL  = VGA_HEIGHT * VGA_WIDTH;
 
-static vga_char_t* term_buff    = (vga_char_t*)0xB8000;
-static uint8_t*    vga_cmd_port = (uint8_t*)0x3D4;
+static vga_char_t* term_buff;
+static uint8_t*    vga_cmd_port;
 
 static uint16_t x = 0;
 static uint16_t y = 0;
@@ -25,8 +25,11 @@ static uint8_t color_attrib = (0x0 << 4) | 0xF;
 
 void console_init()
 {
+    term_buff    = (vga_char_t*)0xC03FF000;
+    vga_cmd_port = (uint8_t*)0xC03FF3D4;
+
     console_clear_screen();
-    console_move_cursor(0, 0);
+    //console_move_cursor(0, 0);
 }
 
 void console_move_cursor(uint16_t x, uint16_t y)
@@ -108,5 +111,5 @@ void console_write_string(const char* str)
         x++;
     }
 
-    console_move_cursor(x, y);
+    //  console_move_cursor(x, y);
 }

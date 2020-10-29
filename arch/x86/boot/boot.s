@@ -4,7 +4,7 @@ extern __kernel_start, __kernel_end, K_HIGH_VMA
 
 bits 32
 
-vga_buf_virt equ 0xcb8000
+vga_buf_virt equ 	0xC03FF000
 color equ 0x0f
 
 section .boot.data
@@ -32,10 +32,11 @@ section  .boot.text
 global _start
 
 _start:
-  push ebx
-  push eax
 
   mov esp, early_stack + 0x1000
+
+	push ebx
+	push eax
 
   call early_main
 
@@ -88,7 +89,6 @@ error:
 
 arch_start:
   mov esp, stack + 0x10000
-
 
 	push	0
 	popf
