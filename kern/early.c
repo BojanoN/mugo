@@ -48,7 +48,7 @@ __attribute__((section(".boot.text"))) void early_main(uint32_t mb_magic, multib
     unsigned int phys_addr;
 
     // Map the kernel
-    for (unsigned int i = 0; i < (k_phys_end - k_phys_start) + 2; i += PAGE_SIZE, current_pt_offset++) {
+    for (unsigned int i = 0; i < ((k_phys_end - k_phys_start) + PAGE_SIZE); i += PAGE_SIZE, current_pt_offset++) {
         phys_addr = k_phys_start + i;
 
         kernel_pt_phys->entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
