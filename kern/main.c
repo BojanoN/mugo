@@ -1,4 +1,5 @@
 #include <arch/info.h>
+#include <arch/multiboot.h>
 #include <arch/paging.h>
 #include <arch/util.h>
 #include <kern/kprint.h>
@@ -25,12 +26,19 @@ void kernel_start(void)
     asm volatile("int $0x3");
 }
 
-void kernel_init(arch_info_t* info)
+void kernel_init(arch_info_t* info, uint32_t multiboot_magic, struct multiboot_info* multiboot_info_ptr)
 {
+
+    console_init();
+
+    if (multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+        panic("The kernel was not booted by a multiboot compliant bootloader!");
+    }
 
     arch_info = info;
     arch_info->init();
 
-    console_init();
+    // TODO: clear boot PT mappings
+
     kernel_start();
 }

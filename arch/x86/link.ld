@@ -6,6 +6,7 @@ K_HIGH_VMA = 0xC0000000;
 SECTIONS {
 
   . = K_BOOT_VMA;
+  __early_start = .;
 
   .boot.data :{
            *(.multiboot)
@@ -16,6 +17,7 @@ SECTIONS {
            *(.boot.text)
            *paging.s(.text)
   }
+  __early_end = .;
 
 
   . += K_HIGH_VMA;

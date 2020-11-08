@@ -9,7 +9,7 @@ color equ 0x0f
 
 section .boot.data
 multiboot_magic:
-	  dd 0
+	dd 0
 multiboot_info_ptr:
 	dd 0
 
@@ -35,13 +35,11 @@ _start:
 
   mov esp, early_stack + 0x1000
 
-	push ebx
-	push eax
+  mov dword [multiboot_magic], eax
+  mov dword [multiboot_info_ptr], ebx
+
 
   call early_main
-
-  pop ebx
-  pop eax
 
   ;; Point cr3 to page directory
 	mov ecx, page_directory
@@ -53,6 +51,7 @@ _start:
 	or ecx, 0x80010000
 	mov cr0, ecx
 
+
   ;; Jump to higher half
   lea eax, arch_start
   jmp eax
@@ -61,6 +60,7 @@ _start:
 
 section .rodata
 boot_msg db	'Jumping to kernel_start...', 0
+
 
 section .text
 print_string:
@@ -88,6 +88,7 @@ error:
   hlt
 
 arch_start:
+
   mov esp, stack + 0x10000
 
 	push	0
@@ -96,6 +97,8 @@ arch_start:
   mov edx, boot_msg
   call print_string
 
+	push dword [multiboot_info_ptr]
+  push dword [multiboot_magic]
 
   call arch_entrypoint
   jmp $
