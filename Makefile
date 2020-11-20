@@ -59,11 +59,11 @@ iso-debug: debug
 
 qemu: all iso
 	@echo "### STARTING QEMU ###"
-	$(QEMU) -no-reboot -cdrom $(ISONAME)
+	$(QEMU) -m 256M -no-reboot -cdrom $(ISONAME)
 
 qemu-debug: debug iso-debug
 	@echo "### STARTING QEMU ###"
-	$(QEMU) -s -S -no-reboot -cdrom $(ISONAME)
+	$(QEMU) -m 256M -s -S -no-reboot -cdrom $(ISONAME)
 
 gdb: debug
 	cgdb -s $(PROJECT) -ex 'target remote localhost:1234'

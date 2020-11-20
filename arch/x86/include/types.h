@@ -1,5 +1,7 @@
 #pragma once
 
+#define NULL 0
+
 typedef long long      uint64_t;
 typedef unsigned int   uint32_t;
 typedef unsigned short uint16_t;

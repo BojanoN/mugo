@@ -28,10 +28,40 @@ static void itoa(unsigned int num, char* buf, size_t size)
     }
 }
 
+static char hexchars[] = "0123456789abcdef";
+
+static void xtoa(unsigned int num, char* buf, size_t bufsize)
+{
+
+    char*        tmp = buf;
+    unsigned int i;
+
+    do {
+        *tmp++ = hexchars[num % 16];
+        num /= 16;
+        i++;
+    } while (num > 0 && i < bufsize);
+    *tmp = 0;
+
+    char* p1 = tmp - 1;
+    char* p2 = buf;
+
+    while (p1 > p2) {
+        char c = *p2;
+        *p2    = *p1;
+        *p1    = c;
+
+        p1--;
+        p2++;
+    }
+}
+
 unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args)
 {
     char*        s;
     unsigned int written = 0;
+
+    char num_buf[NUM_BUF_MAX];
 
     for (; *fmt && (written < (size - 1)); fmt++) {
 
@@ -79,8 +109,7 @@ unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args
         }
         case 'd':
         case 'u': {
-            char num_buf[NUM_BUF_MAX];
-            int  num = va_arg(args, unsigned int);
+            int num = va_arg(args, unsigned int);
 
             itoa(num, num_buf, NUM_BUF_MAX);
             char* tmp = num_buf;
@@ -91,6 +120,19 @@ unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args
 
             break;
         }
+        case 'x': {
+            int num = va_arg(args, unsigned int);
+
+            xtoa(num, num_buf, NUM_BUF_MAX);
+            char* tmp = num_buf;
+
+            while (*tmp) {
+                *dstbuf++ = *tmp++;
+            }
+
+            break;
+        }
+
         default:
             if (*fmt != '%') {
                 *dstbuf++ = '%';

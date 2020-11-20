@@ -34,10 +34,18 @@ __attribute__((section(".boot.text"))) void early_page_map()
         *(unsigned int*)((unsigned int)&page_directory + i) = 0;
     }
 
+    unsigned int phys_addr = 0;
+    current_pt_offset      = 0;
+
+    // Identity map the first MB
+    for (unsigned int i = 0; i < 0x100000; i += PAGE_SIZE, current_pt_offset++) {
+        phys_addr                                = i;
+        boot_pt_phys->entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+    }
+
     // PT offset for kernel mapping
     current_pt_offset             = (k_start_vaddr & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
     unsigned int kernel_pd_offset = (k_start_vaddr & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
-    unsigned int phys_addr;
 
     // Map the kernel
     for (unsigned int i = 0; i < ((k_phys_end - k_phys_start) + PAGE_SIZE); i += PAGE_SIZE, current_pt_offset++) {
