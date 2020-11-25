@@ -15,7 +15,7 @@ multiboot_info_ptr:
 
 global page_directory
 global kernel_pt
-global boot_pt
+global metadata_pt
 
 ;; Dont zero init, just allocate space
 section .boot.bss, nobits
@@ -24,7 +24,7 @@ page_directory:
   resb 4096
 kernel_pt:
   resb 4096
-boot_pt:
+metadata_pt:
   resb 4096
 
 section  .boot.text
@@ -100,5 +100,6 @@ arch_start:
 	push dword [multiboot_info_ptr]
   push dword [multiboot_magic]
 
+  xor ebp, ebp 	  ;; Stack trace sentry
   call arch_entrypoint
   jmp $

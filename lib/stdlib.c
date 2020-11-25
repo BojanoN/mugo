@@ -6,7 +6,7 @@
 static void itoa(unsigned int num, char* buf, size_t size)
 {
     char*        tmp = buf;
-    unsigned int i;
+    unsigned int i   = 0;
 
     do {
         *tmp++ = (num % 10) + '0';
@@ -30,11 +30,11 @@ static void itoa(unsigned int num, char* buf, size_t size)
 
 static char hexchars[] = "0123456789abcdef";
 
-static void xtoa(unsigned int num, char* buf, size_t bufsize)
+static unsigned int xtoa(unsigned int num, char* buf, size_t bufsize)
 {
 
     char*        tmp = buf;
-    unsigned int i;
+    unsigned int i   = 0;
 
     do {
         *tmp++ = hexchars[num % 16];
@@ -54,12 +54,17 @@ static void xtoa(unsigned int num, char* buf, size_t bufsize)
         p1--;
         p2++;
     }
+
+    return i;
 }
 
 unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args)
 {
     char*        s;
     unsigned int written = 0;
+
+    char         padding       = ' ';
+    unsigned int padding_count = 0;
 
     char num_buf[NUM_BUF_MAX];
 
@@ -72,6 +77,25 @@ unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args
         }
 
         fmt++;
+
+        if (*fmt >= '0' && *fmt <= '9') {
+            padding       = *fmt;
+            padding_count = 0;
+
+            fmt++;
+            char* tmp = num_buf;
+
+            while (*fmt >= '0' && *fmt <= '9') {
+                *tmp++ = *fmt++;
+            }
+            tmp--;
+            unsigned int i = 1;
+            while (tmp >= num_buf) {
+                padding_count += i * (*tmp - '0');
+                i *= 10;
+                tmp--;
+            }
+        }
 
         switch (*fmt) {
         case 's': {
@@ -123,8 +147,15 @@ unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args
         case 'x': {
             int num = va_arg(args, unsigned int);
 
-            xtoa(num, num_buf, NUM_BUF_MAX);
-            char* tmp = num_buf;
+            unsigned int num_len = xtoa(num, num_buf, NUM_BUF_MAX);
+            char*        tmp     = num_buf;
+
+            if (num_len < padding_count) {
+                unsigned int padding_len = padding_count - num_len;
+                while (padding_len--) {
+                    *dstbuf++ = padding;
+                }
+            }
 
             while (*tmp) {
                 *dstbuf++ = *tmp++;

@@ -4,7 +4,7 @@ ARCH = x86
 
 include arch/$(ARCH)/config
 
-DIRS := ./kern ./arch/$(ARCH) ./arch/$(ARCH)/boot ./arch/$(ARCH)/drivers ./lib
+DIRS := ./kern ./kern/mem ./arch/$(ARCH) ./arch/$(ARCH)/boot ./arch/$(ARCH)/drivers ./lib
 FILES := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.c $(dir)/*.s $(dir)/*.ld.pre))
 
 C_FILES := $(filter %.c ,$(FILES))
@@ -22,6 +22,7 @@ NASM = nasm
 CC = gcc
 INCLUDEDIR = ./include
 CFLAGS += -I $(INCLUDEDIR) -I arch/$(ARCH)/include -I ./
+CFLAGS += -Wall -Werror -Wextra -Wno-unused-parameter
 
 LDSCRIPT = ./arch/$(ARCH)/link.ld
 LDFLAGS +=  -T $(LDSCRIPT)
@@ -63,7 +64,12 @@ qemu: all iso
 
 qemu-debug: debug iso-debug
 	@echo "### STARTING QEMU ###"
-	$(QEMU) -m 256M -s -S -no-reboot -cdrom $(ISONAME)
+	$(QEMU) -m 256M -d int -no-shutdown -no-reboot -cdrom $(ISONAME)
+
+qemu-gdb: debug iso-debug
+	@echo "### STARTING QEMU ###"
+	$(QEMU) -m 256M -d int -no-shutdown -s -S -no-reboot -cdrom $(ISONAME)
+
 
 gdb: debug
 	cgdb -s $(PROJECT) -ex 'target remote localhost:1234'

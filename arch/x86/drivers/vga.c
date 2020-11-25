@@ -50,7 +50,7 @@ void console_clear_screen()
 
     vga_char_t clr = { ' ', 0 };
 
-    for (unsigned int i = 0; i < VGA_TOTAL; i++) {
+    for (uint16_t i = 0; i < VGA_TOTAL; i++) {
         term_buff[i] = clr;
     }
 }
@@ -64,11 +64,11 @@ void console_scroll()
 {
     vga_char_t clr = { ' ', 0 };
 
-    for (unsigned int i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
+    for (uint16_t i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
         term_buff[i] = term_buff[i + VGA_WIDTH];
     }
 
-    for (unsigned int j = VGA_WIDTH * (VGA_HEIGHT - 1); j < VGA_TOTAL; j++) {
+    for (uint16_t j = VGA_WIDTH * (VGA_HEIGHT - 1); j < VGA_TOTAL; j++) {
         term_buff[j] = clr;
     }
 }
@@ -85,13 +85,11 @@ void console_write_string(const char* str)
 
         if (str[i] == '\n') {
             y++;
-            i++;
             x = 0;
             continue;
         }
         if (str[i] == '\r') {
             x = 0;
-            i++;
             continue;
         }
 
