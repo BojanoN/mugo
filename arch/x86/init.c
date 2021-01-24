@@ -17,7 +17,6 @@ void init(void)
     init_gdt();
     PIC_init();
     init_idt();
-    //init_timer(10000);
 }
 
 void arch_entrypoint(uint32_t magic, struct multiboot_info* multiboot_info_ptr)

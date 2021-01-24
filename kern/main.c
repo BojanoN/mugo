@@ -1,6 +1,7 @@
 #include <arch/info.h>
 #include <arch/multiboot.h>
 #include <arch/paging.h>
+#include <arch/time.h>
 
 #include <kern/kmem.h>
 #include <kern/kprint.h>
@@ -23,6 +24,8 @@ void kernel_main(void)
 
     asm volatile("int $0x3");
 }
+
+extern timer_t arch_timer;
 
 void kernel_init(arch_info_t* info, uint32_t multiboot_magic, struct multiboot_info* multiboot_info_ptr)
 {
@@ -50,6 +53,8 @@ void kernel_init(arch_info_t* info, uint32_t multiboot_magic, struct multiboot_i
 
     arch_info = *info;
     arch_info.init();
+
+    arch_timer.timer_init(10);
 
     kernel_main();
 }

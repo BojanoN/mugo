@@ -93,10 +93,6 @@ void console_write_string(const char* str)
             continue;
         }
 
-        chr.character = str[i];
-
-        term_buff[(y * VGA_WIDTH) + x] = chr;
-
         if (x >= VGA_WIDTH) {
             x = 0;
             y++;
@@ -104,10 +100,13 @@ void console_write_string(const char* str)
 
         if (y >= VGA_HEIGHT) {
             console_scroll();
+            y--;
         }
 
         x++;
-    }
 
-    //  console_move_cursor(x, y);
+        chr.character = str[i];
+
+        term_buff[(y * VGA_WIDTH) + x] = chr;
+    }
 }
