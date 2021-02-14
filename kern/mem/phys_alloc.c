@@ -82,10 +82,6 @@ void init_free_memory(struct multiboot_info* multiboot_info_ptr)
     memory_regions[PHYS_MEM_REGION_KERNEL].size  = kernel_memory_region_size;
     memory_regions[PHYS_MEM_REGION_KERNEL].start = kernel_memory_region_start;
     memory_regions[PHYS_MEM_REGION_KERNEL].end   = kernel_memory_region_start + kernel_memory_region_size;
-
-    extern frame_allocator_t stack_allocator;
-    region_allocators[PHYS_MEM_REGION_KERNEL] = stack_allocator;
-    stack_allocator.init(multiboot_info_ptr, &memory_regions[PHYS_MEM_REGION_KERNEL]);
 }
 
 unsigned int reserve_metadata_space(size_t size)

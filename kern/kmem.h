@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arch/interrupt.h>
 #include <types.h>
 
 #define PAGEFRAME_FLAG_FREE        1
@@ -14,3 +15,4 @@ struct page_frame {
 
 void init_free_memory(struct multiboot_info* multiboot_info);
 void map_kernel_memory(void);
+void page_fault_handler(irq_context_t registers);

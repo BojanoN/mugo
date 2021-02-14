@@ -1,4 +1,5 @@
 #include <arch/info.h>
+#include <arch/interrupt.h>
 #include <arch/multiboot.h>
 #include <arch/paging.h>
 #include <arch/time.h>
@@ -22,6 +23,8 @@ void kernel_main(void)
 {
     kprintf("%s %c %d\n", msg, '?', 42);
 
+    int x = *(int*)0xA000000;
+    x += 1;
     asm volatile("int $0x3");
 }
 
@@ -49,6 +52,7 @@ void kernel_init(arch_info_t* info, uint32_t multiboot_magic, struct multiboot_i
     }
 
     init_free_memory(multiboot_info_ptr);
+
     map_kernel_memory();
 
     arch_info = *info;

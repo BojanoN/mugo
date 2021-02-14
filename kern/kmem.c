@@ -1,11 +1,12 @@
 #include "mem/phys_alloc.h"
+#include <arch/interrupt.h>
 #include <arch/multiboot.h>
 #include <arch/paging.h>
+#include <arch/util.h>
 #include <kern/kprint.h>
 #include <kern/util.h>
-#include <types.h>
 
-static frame_allocator_t kernel_frame_allocator = { 0 };
+#include <types.h>
 
 /*
  * Paging routines
@@ -20,19 +21,33 @@ unsigned int mmap()
     return 0;
 }
 
+void page_fault_handler(irq_context_t registers)
+{
+
+    uint32_t faulting_address;
+    asm volatile("mov %%cr2, %0"
+                 : "=r"(faulting_address));
+
+    // The error code gives us details of what happened.
+    int present = !(registers.err_code & 0x1); // Page not present
+    int rw      = registers.err_code & 0x2; // Write operation?
+    int us      = registers.err_code & 0x4; // Processor was in user-mode?
+    // int reserved = registers.err_code & 0x8; // Overwritten CPU-reserved bits of page entry?
+    int id = registers.err_code & 0x10; // Caused by an instruction fetch?
+
+    kprintf("Page fault at 0x%08x!\n", faulting_address);
+    kprintf("Page not present: %d\nRO: %d\nUser-mode: %d\nCause: %s\n", present, rw, us, id ? "Instruction fetch" : "Direct access");
+    halt();
+}
+
 /*
  * Kernel mapping routines
  */
 
+extern phys_mem_region_t memory_regions[NO_PHYS_MEM_REGION];
+
 void map_kernel_memory(void)
 {
-    extern frame_allocator_t region_allocators[NO_PHYS_MEM_REGION];
-
-    kernel_frame_allocator = region_allocators[PHYS_MEM_REGION_KERNEL];
-
-    unsigned int allocated_frame = kernel_frame_allocator.alloc();
-
-    kprintf("Allocated frame physical address: 0x%08x\n", allocated_frame);
 
     // TODO: identity map the first MB
 
