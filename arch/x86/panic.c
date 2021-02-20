@@ -1,5 +1,5 @@
 #include "include/arch_panic.h"
-#include "include/types.h"
+#include <types/base.h>
 
 #define MAX_STACK_TRACE_SIZE 32
 

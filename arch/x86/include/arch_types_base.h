@@ -1,9 +1,5 @@
 #pragma once
 
-#define NULL 0
-
-#define WORD_MAX 0xFFFFFFFF
-
 typedef long long      uint64_t;
 typedef unsigned int   uint32_t;
 typedef unsigned short uint16_t;
@@ -17,5 +13,4 @@ typedef char      int8_t;
 typedef uint32_t size_t;
 typedef int32_t  ssize_t;
 
-typedef uint32_t word;
-typedef int32_t  sword;
+typedef uint32_t word_t;

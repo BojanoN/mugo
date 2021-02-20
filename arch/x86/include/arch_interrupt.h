@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../drivers/pic.h"
-#include "types.h"
+#include "arch_types_base.h"
 
 #define NO_INTERRUPTS 256
 

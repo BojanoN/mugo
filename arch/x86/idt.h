@@ -1,5 +1,6 @@
 #pragma once
-#include "types.h"
+
+#include <types/base.h>
 
 typedef struct idt_entry {
     uint16_t offset_low;

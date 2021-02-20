@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <types/base.h>
 
 void     PIC_sendEOI(uint16_t irqnum);
 void     PIC_mask_irq(uint16_t irqnum);

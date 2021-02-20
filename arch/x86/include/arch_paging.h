@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include "arch_types_base.h"
 
 typedef uint32_t arch_pt_entry_t;
 typedef uint32_t arch_pd_entry_t;

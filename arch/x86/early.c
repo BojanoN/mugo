@@ -1,6 +1,5 @@
+#include <arch/info.h>
 #include <arch/paging.h>
-#include <kern/util.h>
-#include <types.h>
 
 extern page_directory_t page_directory;
 extern page_table_t     kernel_pt;
@@ -11,10 +10,50 @@ extern unsigned int __kernel_start, __kernel_end, K_HIGH_VMA;
 extern unsigned int __early_start, __early_end;
 extern unsigned int __metadata_start, __metadata_end, K_METADATA_VMA;
 
-__attribute__((section(".boot.data"))) uint8_t early_stack[0x1000] = { 0 };
+__attribute__((section(".boot.data"))) uint8_t       early_stack[0x1000] = { 0 };
+__attribute__((section(".boot.data"))) kernel_info_t kinfo               = { 0 };
 
-// TODO: add layer of abstraction for tty devices to easily switch between virtual and phys VGA
-__attribute__((section(".boot.text"))) void early_page_map()
+__attribute__((section(".boot.text"))) void early_console_write_string(const char* str)
+{
+    static uint16_t x = 0;
+    static uint16_t y = 0;
+
+    uint16_t* term_buff = (uint16_t*)0x00B8000;
+
+    char* ptr = (char*)str;
+
+    for (; *ptr; ptr++) {
+
+        if (*ptr == '\n') {
+            y++;
+            x = 0;
+            continue;
+        }
+        if (*ptr == '\r') {
+            x = 0;
+            continue;
+        }
+
+        if (x >= 80) {
+            x = 0;
+            y++;
+        }
+
+        x++;
+
+        uint16_t chr = (*ptr << 4) | ((0x0 << 4) | 0xF);
+
+        term_buff[(y * 80) + x] = chr;
+    }
+}
+
+__attribute__((section(".boot.text"))) void early_panic(const char* str)
+{
+    early_console_write_string(str);
+    asm("hlt\t\n");
+}
+__attribute__((section(".boot.text"))) void
+early_page_map()
 {
     unsigned int  k_vma               = (unsigned int)&K_HIGH_VMA;
     page_table_t* kernel_pt_phys      = (page_table_t*)((unsigned int)&kernel_pt - k_vma);
@@ -83,8 +122,49 @@ __attribute__((section(".boot.text"))) void early_page_map()
     page_directory_phys->entries[metadata_pd_offset] = ((arch_pd_entry_t)metadata_pt_phys & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 }
 
-__attribute__((section(".boot.text"))) void early_main()
+__attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_magic, struct multiboot_info* multiboot_info_ptr)
 {
+
+    if (multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+        early_panic("The kernel was not booted by a multiboot compliant bootloader!");
+    }
+
+    if (!(multiboot_info_ptr->flags & MULTIBOOT_INFO_MEM_MAP)) {
+        early_panic("No Multiboot memory map was found!");
+    }
+
+    // TODO: clear boot PT mappings
+    if (!(multiboot_info_ptr->flags & MULTIBOOT_INFO_MEMORY)) {
+        early_panic("Unable to probe for free memory!");
+    }
+
+    paddr_t mmap_length   = multiboot_info_ptr->mmap_length;
+    paddr_t mmap_addr     = multiboot_info_ptr->mmap_addr;
+    paddr_t mmap_end_addr = mmap_addr + mmap_length;
+
+    // paddr_t kernel_size = (paddr_t)&__kernel_end - (paddr_t)&__kernel_start;
+
+    // Scan the memory map and determine total number of available frames
+    paddr_t                 curr_addr = mmap_addr;
+    multiboot_memory_map_t* entry;
+    int                     saved_mmap_index = 0;
+
+    while (curr_addr < mmap_end_addr) {
+        entry = (multiboot_memory_map_t*)curr_addr;
+
+        if (entry->type != MULTIBOOT_MEMORY_AVAILABLE) {
+            curr_addr += entry->size + sizeof(multiboot_memory_map_t*);
+            continue;
+        }
+
+        kinfo.memmaps[saved_mmap_index] = *entry;
+        saved_mmap_index++;
+        curr_addr += entry->size + sizeof(multiboot_memory_map_t*);
+    }
+
+    kinfo.mmap_size = saved_mmap_index + 1;
+
     early_page_map();
-    return;
+
+    return (paddr_t)&kinfo;
 }

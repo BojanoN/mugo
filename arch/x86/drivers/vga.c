@@ -1,6 +1,6 @@
 #include <console.h>
 #include <string.h>
-#include <types.h>
+#include <types/base.h>
 
 typedef struct __attribute__((packed)) {
     uint8_t character;
@@ -25,11 +25,17 @@ static uint8_t color_attrib = (0x0 << 4) | 0xF;
 
 void console_init()
 {
+
     term_buff    = (vga_char_t*)0xC03FF000;
     vga_cmd_port = (uint8_t*)0xC03FF3D4;
-
     console_clear_screen();
     //console_move_cursor(0, 0);
+}
+
+void console_set_ports(vaddr_t term, vaddr_t cmd)
+{
+    term_buff    = (vga_char_t*)term;
+    vga_cmd_port = (uint8_t*)cmd;
 }
 
 void console_move_cursor(uint16_t x, uint16_t y)

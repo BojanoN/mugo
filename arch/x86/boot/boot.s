@@ -1,10 +1,10 @@
 
-extern arch_entrypoint, stack, early_stack, early_main
+extern bootstrap, stack, early_stack, early_main
 extern __kernel_start, __kernel_end, K_HIGH_VMA
 
 bits 32
 
-vga_buf_virt equ 	0xC03FF000
+vga_buf_virt equ 	0x00B8000
 color equ 0x0f
 
 section .boot.data
@@ -12,6 +12,8 @@ multiboot_magic:
 	dd 0
 multiboot_info_ptr:
 	dd 0
+kinfo_ptr:
+  dd 0
 
 global page_directory
 global kernel_pt
@@ -38,8 +40,12 @@ _start:
   mov dword [multiboot_magic], eax
   mov dword [multiboot_info_ptr], ebx
 
+	push dword [multiboot_info_ptr]
+  push dword [multiboot_magic]
 
   call early_main
+  mov dword [kinfo_ptr], eax
+
 
   ;; Point cr3 to page directory
 	mov ecx, page_directory
@@ -97,9 +103,8 @@ arch_start:
   mov edx, boot_msg
   call print_string
 
-	push dword [multiboot_info_ptr]
-  push dword [multiboot_magic]
+  push dword[kinfo_ptr]
 
   xor ebp, ebp 	  ;; Stack trace sentry
-  call arch_entrypoint
+  call bootstrap
   jmp $

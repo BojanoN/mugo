@@ -189,3 +189,35 @@ unsigned int strlen(const char* str)
 
     return len;
 }
+
+void* memset(void* dst, int c, size_t n)
+{
+    if (dst == NULL) {
+        return NULL;
+    }
+
+    uint8_t* byte_dst = (uint8_t*)dst;
+    while (n > 0) {
+        *byte_dst = (uint8_t)c;
+        byte_dst++;
+        n--;
+    }
+
+    return dst;
+}
+
+void* memcpy(void* dest, const void* src, size_t n)
+{
+    uint8_t* byte_src  = (uint8_t*)src;
+    uint8_t* byte_dest = (uint8_t*)dest;
+
+    while (n > 0) {
+        *byte_dest = *byte_src;
+
+        byte_src++;
+        byte_dest++;
+        n--;
+    }
+
+    return dest;
+}

@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include <types/base.h>
 
 void console_clear_screen();
 void console_scroll();

@@ -1,4 +1,6 @@
-#include "types.h"
+#pragma once
+
+#include <types/base.h>
 
 typedef struct gdt_entry {
     uint16_t limit_low;

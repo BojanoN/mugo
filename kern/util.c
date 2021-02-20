@@ -1,7 +1,6 @@
 #include "util.h"
 
 #include <arch/panic.h>
-#include <arch/util.h>
 #include <console.h>
 #include <kern/kprint.h>
 

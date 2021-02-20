@@ -6,17 +6,17 @@
 #include <kern/kprint.h>
 #include <kern/util.h>
 
-#include <types.h>
+#include <types/base.h>
 
 /*
  * Paging routines
  */
-unsigned int kmap()
+vaddr_t kmap()
 {
     return 0;
 }
 
-unsigned int mmap()
+vaddr_t mmap()
 {
     return 0;
 }
@@ -24,11 +24,10 @@ unsigned int mmap()
 void page_fault_handler(irq_context_t registers)
 {
 
-    uint32_t faulting_address;
+    vaddr_t faulting_address;
     asm volatile("mov %%cr2, %0"
                  : "=r"(faulting_address));
 
-    // The error code gives us details of what happened.
     int present = !(registers.err_code & 0x1); // Page not present
     int rw      = registers.err_code & 0x2; // Write operation?
     int us      = registers.err_code & 0x4; // Processor was in user-mode?
@@ -44,22 +43,11 @@ void page_fault_handler(irq_context_t registers)
  * Kernel mapping routines
  */
 
-extern phys_mem_region_t memory_regions[NO_PHYS_MEM_REGION];
-
 void map_kernel_memory(void)
 {
 
     // TODO: identity map the first MB
 
     // TODO: adjust the ldscript so we can map individual sections with appropriate permissions
+    // TODO: write stub frame allocator and map the KHEAP
 }
-
-/*
- * Kernel malloc
- */
-/*
-void* kmalloc(size_t size)
-{
-    return 0;
-}
-*/

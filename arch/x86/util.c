@@ -1,4 +1,5 @@
 #include <arch/util.h>
+#include <types/base.h>
 
 void outb(uint16_t port, uint8_t val)
 {
@@ -46,4 +47,20 @@ uint32_t inl(uint16_t port)
                  : "=a"(ret)
                  : "Nd"(port));
     return ret;
+}
+
+inline void msr_write(reg_t reg, uint64_t val)
+{
+    asm volatile("wrmsr"
+                 :
+                 : "A"(val), "c"(reg));
+}
+
+inline uint64_t msr_read(reg_t reg)
+{
+    uint64_t val = 0;
+    asm volatile("rdmsr"
+                 :
+                 : "A"(val), "c"(reg));
+    return val;
 }

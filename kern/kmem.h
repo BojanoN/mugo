@@ -1,7 +1,7 @@
 #pragma once
 
 #include <arch/interrupt.h>
-#include <types.h>
+#include <types/base.h>
 
 #define PAGEFRAME_FLAG_FREE        1
 #define PAGEFRAME_FLAG_UNAVAILABLE 2
