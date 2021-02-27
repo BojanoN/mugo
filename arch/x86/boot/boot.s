@@ -1,10 +1,10 @@
 
-extern bootstrap, stack, early_stack, early_main
+extern bootstrap, stack, early_stack, early_main, kernel_pt, page_directory
 extern __kernel_start, __kernel_end, K_HIGH_VMA
 
 bits 32
 
-vga_buf_virt equ 	0x00B8000
+vga_buf_virt equ 	0xC03FF000
 color equ 0x0f
 
 section .boot.data
@@ -15,19 +15,13 @@ multiboot_info_ptr:
 kinfo_ptr:
   dd 0
 
-global page_directory
-global kernel_pt
-global metadata_pt
+global boot_pt
 
-;; Dont zero init, just allocate space
-section .boot.bss, nobits
+section .boot.pt
 align 4096
-page_directory:
-  resb 4096
-kernel_pt:
-  resb 4096
-metadata_pt:
-  resb 4096
+boot_pt:
+	times 1024  dd 0
+
 
 section  .boot.text
 

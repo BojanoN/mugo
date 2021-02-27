@@ -11,11 +11,9 @@
 #include <console.h>
 #include <string.h>
 
+#include "assert.h"
+#include "log.h"
 #include "time.h"
-
-unsigned char stack[0x10000];
-
-page_table_t page_table;
 
 const char* msg = "Hi!\n";
 
@@ -36,10 +34,13 @@ void bootstrap(kernel_info_t* info)
 
     console_init();
 
-    map_kernel_memory();
+    log(INFO, "Bootstrap started");
+    log(INFO, "Initializing kernel memory");
+
+    kmem_init();
 
     arch_init();
-    ktime_init();
+    //ktime_init();
 
     kernel_main();
 }

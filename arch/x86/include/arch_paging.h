@@ -1,14 +1,13 @@
 #pragma once
-#include "arch_types_base.h"
+#include <arch_util.h>
+#include <types/base.h>
 
-typedef uint32_t arch_pt_entry_t;
-typedef uint32_t arch_pd_entry_t;
-
-void arch_enable_paging(void);
-void arch_load_pagetable(uint32_t pt_phys_addr);
+typedef paddr_t arch_pt_entry_t;
+typedef paddr_t arch_pd_entry_t;
 
 #define ARCH_PAGE_SIZE 4096
 
+#define ARCH_PAGE_MASK               0xFFFFF000
 #define ARCH_VADDR_PD_OFFSET_MASK    0xFFC00000
 #define ARCH_VADDR_PT_OFFSET_MASK    0x003FF000
 #define ARCH_PT_ENTRY_PHYS_ADDR_MASK 0x00000FFF
@@ -16,5 +15,30 @@ void arch_load_pagetable(uint32_t pt_phys_addr);
 #define ARCH_PD_ENTRY_PRESENT 0x1
 #define ARCH_PD_ENTRY_RW      0x2
 
-#define ARCH_PAGE_PRESENT ARCH_PD_ENTRY_PRESENT
-#define ARCH_PAGE_RW      ARCH_PD_ENTRY_RW
+#define ARCH_PAGE_PRESENT             ARCH_PD_ENTRY_PRESENT
+#define ARCH_PAGE_RW                  ARCH_PD_ENTRY_RW
+#define ARCH_PAGE_ENTRY_USER          0x4
+#define ARCH_PAGE_ENTRY_WRITE_THRU    0x8
+#define ARCH_PAGE_ENTRY_CACHE_DISABLE 0x10
+#define ARCH_PAGE_ENTRY_EXEC          0x0 // not avaialable for x86
+
+static inline void arch_load_pagetable(paddr_t pd_phys_addr)
+{
+    native_cr3_write(pd_phys_addr);
+}
+
+static inline void arch_flush_tlb_single(vaddr_t addr)
+{
+    asm volatile("invlpg (%0)" ::"r"(addr)
+                 : "memory");
+}
+
+static inline void arch_flush_tlb(void)
+{
+    native_cr3_write(native_cr3_read());
+}
+
+static inline vaddr_t arch_get_faulting_addr(void)
+{
+    return native_cr2_read();
+}

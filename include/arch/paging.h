@@ -14,3 +14,4 @@ typedef struct page_directory {
 } page_directory_t;
 
 #define PAGE_SIZE ARCH_PAGE_SIZE
+#define PAGE_MASK ARCH_PAGE_MASK
