@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "assert.h"
+#include "kmalloc.h"
 #include "log.h"
 #include "time.h"
 
@@ -26,6 +27,10 @@ void kernel_main(void)
     kprintf("%s %c %d\n", msg, '?', 42);
 
     asm volatile("int $0x3");
+
+    uint8_t* alloc = (uint8_t*)kmalloc(32);
+    log(INFO, "Allocated 0x%08x", alloc);
+    kfree(alloc);
 }
 
 void bootstrap(kernel_info_t* info)

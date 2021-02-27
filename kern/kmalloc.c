@@ -34,8 +34,7 @@ static vaddr_t pool_start      = 0;
 static vaddr_t pool_end        = 0;
 static paddr_t pool_start_phys = 0;
 
-static vaddr_t page_freelist_head = 0;
-static vaddr_t page_freelist_tail = 0;
+static vaddr_t page_freelist_head = PAGE_FREELIST_SENTINEL;
 
 static bag_t bags[NO_CLASSES] = { 0 };
 
@@ -43,12 +42,13 @@ static inline void free_page(vaddr_t page)
 {
     ASSERT_MSG(page < pool_start && page >= pool_end, "Invalid page freed");
 
-    *((vaddr_t*)page_freelist_tail) = page;
+    *((vaddr_t*)page)  = page_freelist_head;
+    page_freelist_head = page;
 }
 
 static inline vaddr_t fetch_page(void)
 {
-    if (page_freelist_head == 0) {
+    if (page_freelist_head == PAGE_FREELIST_SENTINEL) {
         panic("Kmalloc: No free pages left");
         return 0;
     }
@@ -152,9 +152,11 @@ void kmalloc_init(uint8_t* pool_vaddr, uint8_t* pool_phys, size_t size)
     }
 
     *((vaddr_t*)(pool_end - PAGE_SIZE)) = PAGE_FREELIST_SENTINEL;
+
+    page_freelist_head = pool_start;
 }
 
-void* kmalloc(size_t size, void* phys_addr)
+inline static void* kmalloc_priv(size_t size, void* phys_addr)
 {
     if (size < MIN_BLOCK_SIZE || size > (1 << NO_CLASSES)) {
         return NULL;
@@ -173,9 +175,11 @@ void* kmalloc(size_t size, void* phys_addr)
     return ret;
 }
 
+void* kmalloc(size_t size) { return kmalloc_priv((size), NULL); }
+
 void kfree(void* ptr)
 {
-    ASSERT_MSG((vaddr_t)ptr < pool_start && (vaddr_t)ptr >= pool_end, "Tried to free invalid pointer");
+    ASSERT_MSG((vaddr_t)ptr > pool_start && (vaddr_t)ptr <= pool_end, "Tried to free invalid pointer");
 
     page_hdr_t* containing_page_hdr = (page_hdr_t*)((vaddr_t)ptr & PAGE_MASK);
 

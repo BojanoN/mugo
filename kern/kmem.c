@@ -20,7 +20,7 @@ __attribute__((section(".stack"))) uint8_t stack[CONF_STACK_SIZE];
  * Paging routines
  */
 
-vaddr_t mmap()
+vaddr_t mmap(void)
 {
     return 0;
 }
@@ -71,8 +71,8 @@ void page_fault_handler(irq_context_t registers)
     // int reserved = registers.err_code & 0x8; // Overwritten CPU-reserved bits of page entry?
     int id = registers.err_code & 0x10; // Caused by an instruction fetch?
 
-    log(ERROR, "Page fault at 0x%08x!\n", faulting_address);
-    log(ERROR, "Page not present: %d\nRO: %d\nUser-mode: %d\nCause: %s\n", present, rw, us, id ? "Instruction fetch" : "Direct access");
+    log(ERROR, "Page fault at 0x%08x!", faulting_address);
+    log(ERROR, "Page not present: %d\nRO: %d\nUser-mode: %d\nCause: %s", present, rw, us, id ? "Instruction fetch" : "Direct access");
     halt();
 }
 
@@ -98,7 +98,7 @@ void kmem_init(void)
     kmalloc_init((uint8_t*)&__kernel_heap_start, (uint8_t*)((vaddr_t)&__kernel_heap_start - (vaddr_t)&K_HIGH_VMA), CONF_KHEAP_SIZE);
 }
 
-extern unsigned int __kernel_start, __kernel_text_end, __kernel_bss_end, __kernel_rodata_end, __kernel_stack_guard_start, __kernel_stack_end, __kernel_end;
+extern unsigned int __early_start, __kernel_start, __kernel_text_end, __kernel_bss_end, __kernel_rodata_end, __kernel_stack_guard_start, __kernel_stack_end, __kernel_end;
 
 void map_kernel_memory(void)
 {
@@ -110,7 +110,7 @@ void map_kernel_memory(void)
     vaddr_t kernel_stack_end  = (vaddr_t)&__kernel_stack_end;
     vaddr_t kernel_end        = (vaddr_t)&__kernel_stack_end;
 
-    paddr_t kernel_start_phys = (paddr_t)kernel_start - (paddr_t)&K_HIGH_VMA;
+    paddr_t kernel_start_phys = (paddr_t)kernel_start - (vaddr_t)&K_HIGH_VMA; //(paddr_t)&__early_start;
 
     paddr_t curr_addr_phys = kernel_start_phys;
     vaddr_t curr_addr      = kernel_start;
