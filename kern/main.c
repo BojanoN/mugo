@@ -14,11 +14,13 @@
 #include "assert.h"
 #include "kmalloc.h"
 #include "log.h"
+#include "sched.h"
 #include "time.h"
 
-const char* msg = "Hi!\n";
-
+const char*          msg = "Hi!\n";
 static kernel_info_t kinfo;
+
+extern sched_policy_t sched_rr;
 
 void arch_init(void);
 
@@ -45,7 +47,8 @@ void bootstrap(kernel_info_t* info)
     kmem_init();
 
     arch_init();
-    //ktime_init();
+    sched_init(&sched_rr);
+    ktime_init(sched_rr.interrupt_handler);
 
     kernel_main();
 }

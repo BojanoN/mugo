@@ -2,5 +2,5 @@
 
 #include <types/time.h>
 
-void ktime_init(void);
+void ktime_init(void (*timer_callback)(void));
 int  kclock_gettime(clockid_t clock, timespec_t* time);

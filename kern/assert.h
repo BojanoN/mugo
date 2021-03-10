@@ -3,6 +3,8 @@
 #include "log.h"
 #include "util.h"
 
+#ifdef DEBUG
+
 #define ASSERT(expr)         \
     do                       \
         if (!(expr)) {       \
@@ -18,3 +20,9 @@
             halt();           \
         }                     \
     while (0)
+#else
+
+#define ASSERT(expr)
+#define ASSERT_MSG(expr, msg)
+
+#endif

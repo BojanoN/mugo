@@ -1,20 +1,15 @@
 #include "time.h"
 #include "conf.h"
+#include "log.h"
 
 #include <arch/time.h>
 
 extern hwclock_t hwclock;
 
-static void tick_handler(void);
-
-void ktime_init(void)
+void ktime_init(void (*timer_callback)(void))
 {
-    hwclock.hwclock_register_callback(tick_handler);
+    hwclock.hwclock_register_callback(timer_callback);
     hwclock.hwclock_init(CONF_SCHED_TICK_FREQ_HZ);
-}
-
-static void tick_handler(void)
-{
 }
 
 int kclock_gettime(clockid_t clock, timespec_t* time)
