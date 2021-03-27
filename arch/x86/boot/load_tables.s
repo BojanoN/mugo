@@ -1,5 +1,6 @@
 global load_gdt
 global load_idt
+global load_tss
 
 load_idt:
    mov eax, [esp+4] 
@@ -19,3 +20,9 @@ cleanup:
   mov gs, ax
   mov ss, ax
   ret
+
+load_tss: 
+ 	   mov ax, 0x2B      
+
+	   ltr ax            
+	   ret 

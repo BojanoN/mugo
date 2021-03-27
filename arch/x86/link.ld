@@ -29,9 +29,12 @@ SECTIONS {
   }
   __early_end = .;
   . = ALIGN(4K);
-  
 
-  . += K_HIGH_VMA;
+
+
+ 
+
+  . = __early_end + K_HIGH_VMA;
   __ktable_start = .;
   .ktable ALIGN(4K) : AT(ADDR (.ktable) - K_HIGH_VMA) {
   *(.ktable)
@@ -76,7 +79,19 @@ SECTIONS {
 
   __kernel_end = .;
 
+
   __metadata_start = . - K_HIGH_VMA;
   __metadata_end = __metadata_start + K_METADATA_SIZE;
+
+  . = ALIGN(4K);
+  __next_phys = . - K_HIGH_VMA;
+. = 0xa0000000;
+__usr_test_start = .;
+.usr.text ALIGN(4K) : AT(__next_phys){
+*(.usr.txt)
+}
+.usr.stack ALIGN(4K) : AT( __next_phys + 4096){
+*(.usr.stk)
+}
 
 }

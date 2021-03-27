@@ -35,7 +35,6 @@ void PIC_sendEOI(uint16_t irqnum)
 
 void PIC_init(void)
 {
-    disable_interrupts();
 
     uint8_t init_seq_flags = ICW1_INIT | ICW1_ICW4;
 
@@ -61,8 +60,6 @@ void PIC_init(void)
 
     outb(MASTER_PIC_DATA, master_mask);
     outb(SLAVE_PIC_DATA, slave_mask);
-
-    enable_interrupts();
 }
 
 void PIC_mask_irq(uint16_t irqnum)

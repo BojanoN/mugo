@@ -12,21 +12,20 @@
 
 extern void       page_fault_handler(irq_context_t registers);
 extern struct tss tss;
-void              syscall_entry(void);
+
+void arch_kcall_entry(void);
 
 void arch_init(void)
 {
-    disable_interrupts();
 
     init_gdt();
     PIC_init();
     init_idt();
 
-    register_interrupt_callback(14, page_fault_handler);
+    register_interrupt_callback(0xe, page_fault_handler);
 
     // Configure sysenter
-    msr_write(I386_SYSENTER_EIP, (uint32_t)&syscall_entry);
+    msr_write(I386_SYSENTER_CS, 0x8);
+    msr_write(I386_SYSENTER_EIP, (uint32_t)&arch_kcall_entry);
     msr_write(I386_SYSENTER_ESP, (uint32_t)&tss.sp0);
-
-    enable_interrupts();
 }

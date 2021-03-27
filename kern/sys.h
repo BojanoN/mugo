@@ -1,3 +1,3 @@
 #pragma once
 
-void syscall_entry(void);
+void kcall_entry(void);

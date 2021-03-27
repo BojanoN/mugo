@@ -95,3 +95,5 @@ static inline vaddr_t native_cr2_read(void)
 
     return val;
 }
+
+void native_update_tss(vaddr_t esp0);

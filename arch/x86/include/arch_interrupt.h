@@ -5,12 +5,12 @@
 
 #define NO_INTERRUPTS 256
 
-#define enable_interrupts()  asm("sti \n")
-#define disable_interrupts() asm("cli \n")
+#define native_enable_interrupts()  asm("sti \n")
+#define native_disable_interrupts() asm("cli \n")
 
 struct irq_context {
 
-    uint32_t ds; // Data segment selector
+    //    uint32_t ds; // Data segment selector
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; // Pushed by pusha.
     uint32_t int_no, err_code; // Interrupt number and error code (if applicable)
     uint32_t eip, cs, eflags, useresp, ss; // Pushed by the processor automatically.

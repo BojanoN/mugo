@@ -5,6 +5,8 @@
 #define CLOCK_REALTIME  1
 #define CLOCK_MONOTONIC 2
 
+#define SEC_NSEC 1000000000
+
 typedef size_t time_t;
 typedef size_t clockid_t;
 

@@ -4,8 +4,24 @@
 
 typedef struct {
     reg_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-    reg_t gs, fs, es, ds, eip, cs, eflags, useresp, ss;
+} arch_gp_regs;
+
+typedef struct {
+    arch_gp_regs gp_regs;
+    uint16_t     gs, fs, es, ds;
+    reg_t        eip, cs, eflags, useresp, ss;
 } arch_regs;
+
+typedef struct {
+    arch_gp_regs gp_regs_state;
+    uint32_t     err;
+
+    reg_t eip;
+    reg_t cs;
+    reg_t eflags;
+    reg_t esp;
+    reg_t ss;
+} arch_thread_context_t;
 
 // clang-format off
 struct tss{
@@ -34,6 +50,7 @@ struct tss{
         uint16_t  ds;   unsigned : 16;      // 0x54
         uint16_t  fs;   unsigned : 16;      // 0x58
         uint16_t  gs;   unsigned : 16;      
-        uint16_t  ldtr; unsigned : 16;      
+        uint16_t  ldtr; unsigned : 16;
+  unsigned : 32;
 };
 // clang-format on

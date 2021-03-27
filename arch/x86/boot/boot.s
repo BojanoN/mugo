@@ -1,5 +1,5 @@
 
-extern bootstrap, stack, early_stack, early_main, kernel_pt, page_directory
+extern bootstrap, kstack, early_stack, early_main, kernel_pt, page_directory
 extern __kernel_start, __kernel_end, K_HIGH_VMA
 
 bits 32
@@ -89,7 +89,7 @@ error:
 
 arch_start:
 
-  mov esp, stack + 0x10000
+  mov esp, kstack + 0x10000
 
 	push	0
 	popf

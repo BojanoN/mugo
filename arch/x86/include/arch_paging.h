@@ -14,6 +14,7 @@ typedef paddr_t arch_pd_entry_t;
 
 #define ARCH_PD_ENTRY_PRESENT 0x1
 #define ARCH_PD_ENTRY_RW      0x2
+#define ARCH_PD_ENTRY_USER    0x4
 
 #define ARCH_PAGE_PRESENT             ARCH_PD_ENTRY_PRESENT
 #define ARCH_PAGE_RW                  ARCH_PD_ENTRY_RW

@@ -1,9 +1,12 @@
-;;  Exception handlers
+ extern kstack_top, arch_current_thread_execution_ctx 
 
+ global arch_return_to_user
+
+;;  Exception handlers
 %macro EH 1
 	[GLOBAL eh%1]
 eh%1:
-	cli
+  ;; 	cli
 	push byte 0
 	push byte %1
 	jmp eh_common
@@ -12,7 +15,7 @@ eh%1:
 %macro EH_ERRCODE 1
 	[GLOBAL eh%1]
 eh%1:
-	cli
+  ;; 	cli
 	push byte %1
 	jmp eh_common
 %endmacro
@@ -41,14 +44,14 @@ eh_common:
 
 	   popa
 	   add esp, 8
-	   sti
+	 
 	   iret
 
 ;; Interrupt handlers
 %macro IRQ 2
 	[GLOBAL irq%1]
 	irq%1:
-	cli
+  ;; 	cli
 	push byte 0
 	push byte %2
 	jmp irq_common
@@ -57,28 +60,33 @@ eh_common:
 extern interrupt_handler
 
 irq_common:
+  ;;      mov esp, kstack_top
 	   pusha
 
-	   mov ax, ds
-	   push eax
-
+	   
 	   mov ax, 0x10
 	   mov ds, ax
 	   mov es, ax
 	   mov fs, ax
 	   mov gs, ax
 
-	   call interrupt_handler
+  	 call interrupt_handler
 
-	   pop eax
+     
+arch_return_to_user:
+
+
+	   mov ax, 0x23
 	   mov ds, ax
 	   mov es, ax
 	   mov fs, ax
 	   mov gs, ax
 
+     mov esp, dword [arch_current_thread_execution_ctx]
+
 	   popa
-	   add esp, 8
-	   sti
+     add esp, 4
+
 	   iret
 
 
