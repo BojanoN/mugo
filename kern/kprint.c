@@ -1,6 +1,5 @@
 #include "kprint.h"
 #include <arch/interrupt.h>
-#include <stdarg.h>
 #include <stdlib.h>
 
 #include <console.h>

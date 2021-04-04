@@ -1,5 +1,5 @@
 #include <console.h>
-#include <string.h>
+#include <stdlib.h>
 #include <types/base.h>
 
 typedef struct __attribute__((packed)) {

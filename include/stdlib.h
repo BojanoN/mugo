@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdarg.h>
 #include <types/base.h>
+#include <va_args.h>
 
 unsigned int vsprintf_s(char* buf, size_t size, const char* fmt, va_list args);
 

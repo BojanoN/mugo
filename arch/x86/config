@@ -1,4 +1,0 @@
-CFLAGS := -m32 -march=i386 -ffreestanding -nostdlib -fno-stack-protector -fno-plt -fno-pic -mno-mmx -mno-sse -mno-sse2 
-QEMU = qemu-system-i386
-NASMFLAGS = -felf32 -w+error=all
-LDFLAGS := -melf_i386

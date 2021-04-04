@@ -15,7 +15,7 @@ SECTIONS {
   __early_start = .;
 
   .boot.data :{
-           *(.multiboot)
+           KEEP(*(.multiboot))
            *(.boot.data)
   }
 
@@ -70,6 +70,11 @@ SECTIONS {
         *(.stack)
   }
 
+  .mman.kstack ALIGN(4K) : AT( __next_phys + 4096){
+        *(.usr.stk)
+  }
+
+
   . = ALIGN(4K);
   __kernel_stack_end = .;
 
@@ -83,15 +88,5 @@ SECTIONS {
   __metadata_start = . - K_HIGH_VMA;
   __metadata_end = __metadata_start + K_METADATA_SIZE;
 
-  . = ALIGN(4K);
-  __next_phys = . - K_HIGH_VMA;
-. = 0xa0000000;
-__usr_test_start = .;
-.usr.text ALIGN(4K) : AT(__next_phys){
-*(.usr.txt)
-}
-.usr.stack ALIGN(4K) : AT( __next_phys + 4096){
-*(.usr.stk)
-}
 
 }

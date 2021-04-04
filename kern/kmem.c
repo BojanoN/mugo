@@ -161,30 +161,4 @@ void map_kernel_memory(void)
     for (; curr_addr < kernel_end; curr_addr += PAGE_SIZE, curr_addr_phys += PAGE_SIZE) {
         kmap(curr_addr, curr_addr_phys, KMAP_PROT_READ | KMAP_PROT_WRITE, 0);
     }
-
-    // User function test
-    extern size_t __usr_test_start;
-    extern size_t __next_phys;
-
-    curr_addr                                                           = (vaddr_t)&__usr_test_start;
-    curr_addr_phys                                                      = (paddr_t)&__next_phys;
-    user_test_pt.entries[(curr_addr & ARCH_VADDR_PT_OFFSET_MASK) >> 12] = (curr_addr_phys & PAGE_MASK) | ARCH_PAGE_ENTRY_USER | ARCH_PAGE_RW | ARCH_PAGE_PRESENT;
-
-    //kmap(0xa0215000, curr_addr_phys, KMAP_PROT_READ | KMAP_PROT_WRITE | KMAP_PROT_USER, 0);
-    curr_addr += PAGE_SIZE;
-    curr_addr_phys += PAGE_SIZE;
-    user_test_pt.entries[(curr_addr & ARCH_VADDR_PT_OFFSET_MASK) >> 12] = (curr_addr_phys & PAGE_MASK) | ARCH_PAGE_ENTRY_USER | ARCH_PAGE_RW | ARCH_PAGE_PRESENT;
-
-    curr_addr += PAGE_SIZE;
-    curr_addr_phys += PAGE_SIZE;
-    user_test_pt.entries[(curr_addr & ARCH_VADDR_PT_OFFSET_MASK) >> 12] = (curr_addr_phys & PAGE_MASK) | ARCH_PAGE_ENTRY_USER | ARCH_PAGE_RW | ARCH_PAGE_PRESENT;
-
-    curr_addr += PAGE_SIZE;
-    curr_addr_phys += PAGE_SIZE;
-    user_test_pt.entries[(curr_addr & ARCH_VADDR_PT_OFFSET_MASK) >> 12] = (curr_addr_phys & PAGE_MASK) | ARCH_PAGE_ENTRY_USER | ARCH_PAGE_RW | ARCH_PAGE_PRESENT;
-
-    paddr_t user_test_pt_phys                                             = ((paddr_t)&user_test_pt - 0xC0000000);
-    page_directory.entries[(curr_addr & ARCH_VADDR_PD_OFFSET_MASK) >> 22] = (user_test_pt_phys & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW | ARCH_PD_ENTRY_USER);
-
-    //    kmap(0xa0216000, curr_addr_phys, KMAP_PROT_READ | KMAP_PROT_WRITE | KMAP_PROT_USER, 0);
 }
