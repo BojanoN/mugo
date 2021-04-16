@@ -1,10 +1,11 @@
 PROJECT = os.elf
 
 ARCH = i686
+ROOT_DIR =  $(shell pwd)
 
 include arch/$(ARCH)/config
 
-DIRS := ./kern ./kern/mem ./arch/$(ARCH) ./arch/$(ARCH)/boot ./arch/$(ARCH)/drivers ./lib/stdlib ./lib/libelf
+DIRS := $(ROOT_DIR)/kern $(ROOT_DIR)/arch/$(ARCH) $(ROOT_DIR)/arch/$(ARCH)/boot $(ROOT_DIR)/arch/$(ARCH)/drivers $(ROOT_DIR)/lib/stdlib $(ROOT_DIR)/lib/libelf
 FILES := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.c $(dir)/*.s $(dir)/*.ld.pre))
 
 C_FILES := $(filter %.c ,$(FILES))
@@ -26,6 +27,8 @@ ISODIR = ./iso
 ISONAME = os.iso
 MKRESCUEFLAGS = -d /usr/lib/grub/i386-pc
 
+export CC CFLAGS LDFLAGS ASM 
+
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -35,23 +38,24 @@ MKRESCUEFLAGS = -d /usr/lib/grub/i386-pc
 %.ld : %.ld.pre
 	$(CC) $(CFLAGS) -E -x c $< | grep -v "^#" > $@
 
-all: LDFLAGS +=  -T $(LDSCRIPT) 
 all: $(PROCESSED_LD_FILES) $(ASM_OBJS) $(C_OBJS)
+	$(MAKE) -C serv
 	$(CC) $(CFLAGS)  $(LDFLAGS) -O2 $(ASM_OBJS) $(C_OBJS) -o $(PROJECT)
 
 
 debug: CFLAGS += -g -DDEBUG -O0
-debug: LDSCRIPT = ./arch/$(ARCH)/link.ld.debug
-debug: NASMFLAGS+= -g -O0
+debug: ASMFLAGS+= -g -O0
 debug: all
 
 iso: all
 	@cp $(PROJECT) $(ISODIR)/boot
+	@cp serv/mman/mman.elf $(ISODIR)/boot/modules
 	@echo "### BUILDING BOOTABLE ISO ###"
 	grub-mkrescue $(MKRESCUEFLAGS) -o $(ISONAME) $(ISODIR)
 
 iso-debug: debug
 	@cp $(PROJECT) $(ISODIR)/boot
+	@cp serv/mman/mman.elf $(ISODIR)/boot/modules
 	@echo "### BUILDING BOOTABLE ISO ###"
 	grub-mkrescue $(MKRESCUEFLAGS) -o $(ISONAME) $(ISODIR)
 
@@ -73,4 +77,5 @@ gdb: debug
 
 
 clean:
+	- $(MAKE) -C serv clean
 	- rm -f $(PROJECT) $(ISONAME) $(ISODIR)/boot/$(PROJECT) $(C_OBJS) $(ASM_OBJS)

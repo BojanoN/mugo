@@ -1,28 +1,35 @@
 ENTRY(main)
 
-MODULE_VADDR = 0xa0000000;
+START = 0x400000;
+
+PHDRS {
+  text PT_LOAD;
+  data PT_LOAD;
+  rodata PT_LOAD;
+}
 
 SECTIONS {
 
-  . = ALIGN(4K);
-
-  .text ALIGN(4K) : AT(ADDR (.text) - MODULE_VADDR) {
+  .text START : {
       *(.text)
-  }
+  } :text
 
-  .bss ALIGN(4K) : AT(ADDR (.bss) - MODULE_VADDR){
+  .bss ALIGN(4K) : {
      *(.bss)
-  }
+  } :data
 
 
-  .rodata ALIGN(4K) : AT(ADDR (.rodata) - MODULE_VADDR){
+  .rodata ALIGN(4K) : {
       *(.rodata)
-  }
+  } :rodata
 
-  .data ALIGN(4K) : AT(ADDR (.data) - MODULE_VADDR){
+  .data ALIGN(4K) : {
       *(.data)
-  }
+  } :data
 
-  /DISCARD/ : { *(*) }
+  .got : {
+      *(.got*)
+  } :data
 
+ /DISCARD/ : { *(*) }
 }

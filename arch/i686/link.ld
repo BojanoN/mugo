@@ -14,6 +14,7 @@ SECTIONS {
   . = K_BOOT_VMA;
   __early_start = .;
 
+  . = ALIGN(8);
   .boot.data :{
            KEEP(*(.multiboot))
            *(.boot.data)
@@ -32,30 +33,37 @@ SECTIONS {
 
 
 
- 
 
-  . = __early_end + K_HIGH_VMA;
+
+  . += K_HIGH_VMA;
+  . = ALIGN(4K);
+
+  __kernel_start = .;
   __ktable_start = .;
   .ktable ALIGN(4K) : AT(ADDR (.ktable) - K_HIGH_VMA) {
   *(.ktable)
   }
+  . = ALIGN(4K);
+  __ktable_end = .;
 
-  __kernel_start = .;
 
   .text ALIGN(4K) : AT(ADDR (.text) - K_HIGH_VMA) {
       *(.text)
   }
+  . = ALIGN(4K);
   __kernel_text_end = .;
 
   .bss ALIGN(4K) : AT(ADDR (.bss) - K_HIGH_VMA){
      *(.bss)
   }
 
+. = ALIGN(4K);
   __kernel_bss_end = .;
   .rodata ALIGN(4K) : AT(ADDR (.rodata) - K_HIGH_VMA){
      *(.rodata)
   }
 
+. = ALIGN(4K);
   __kernel_rodata_end = .;
   .data ALIGN(4K) : AT(ADDR (.data) - K_HIGH_VMA){
       *(.data)
@@ -66,27 +74,16 @@ SECTIONS {
    __kernel_stack_guard_start = .;
 
    . += 4K;
+   __kernel_stack_start = .;
+
   .stack  ALIGN(4K) : AT(ADDR (.stack) - K_HIGH_VMA){
         *(.stack)
   }
 
-  .mman.kstack ALIGN(4K) : AT( __next_phys + 4096){
-        *(.usr.stk)
-  }
-
-
   . = ALIGN(4K);
   __kernel_stack_end = .;
 
-  . += 4K; /* heap guard page */
-  __kernel_heap_start = .;
-  . += K_HEAP_SIZE;
-
   __kernel_end = .;
-
-
-  __metadata_start = . - K_HIGH_VMA;
-  __metadata_end = __metadata_start + K_METADATA_SIZE;
 
 
 }

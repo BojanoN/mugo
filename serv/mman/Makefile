@@ -8,24 +8,22 @@ C_OBJS := $(C_FILES:.c=.o)
 ASM_FILES := $(filter %.s ,$(FILES))
 ASM_OBJS := $(ASM_FILES:.s=.o)
 
-LDSCRIPT = ./arch/$(ARCH)/link.ld
-
+LDSCRIPT := ./link.ld
+LDFLAGS :=  -T $(LDSCRIPT)
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.s
-	$(NASM) $(NASMFLAGS) $< -o $@
+	$(ASM) $(ASMFLAGS) $< -o $@
 
 
-all: LDFLAGS +=  -T $(LDSCRIPT)
-all: $(PROCESSED_LD_FILES) $(ASM_OBJS) $(C_OBJS)
-	ld -n $(ASM_OBJS) $(C_OBJS) -o $(PROJECT) $(LDFLAGS)
+all: $(ASM_OBJS) $(C_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -O2 $(ASM_OBJS) $(C_OBJS) -o $(OUTPUT) 
 
 
 debug: CFLAGS += -g -DDEBUG -O0
-debug: LDSCRIPT = ./arch/$(ARCH)/link.ld.debug
-debug: NASMFLAGS+= -g -O0
+debug: ASMFLAGS+= -g -O0
 debug: all
 
 clean:

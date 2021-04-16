@@ -11,4 +11,5 @@
 
 void map_kernel_memory(void);
 void page_fault_handler(irq_context_t registers);
-void kmem_init(void);
+void kmem_init(kernel_info_t* info);
+void bootstrap_identity_map_init_mem(kernel_info_t* info);

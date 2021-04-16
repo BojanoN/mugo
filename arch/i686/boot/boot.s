@@ -1,5 +1,5 @@
 
-extern bootstrap, kstack, early_stack, early_main, kernel_pt, page_directory
+extern bootstrap, kstack, early_stack, early_main, boot_kernel_pt, boot_page_directory
 extern __kernel_start, __kernel_end, K_HIGH_VMA
 
 bits 32
@@ -42,7 +42,7 @@ _start:
 
 
   ;; Point cr3 to page directory
-	mov ecx, page_directory
+	mov ecx, boot_page_directory
   sub ecx, K_HIGH_VMA
   mov cr3, ecx
 
@@ -89,7 +89,7 @@ error:
 
 arch_start:
 
-  mov esp, kstack + 0x10000
+  mov esp, kstack + 0x1000
 
 	push	0
 	popf

@@ -11,6 +11,7 @@
 
 #include <console.h>
 #include <stdlib.h>
+#include <sys/elf.h>
 
 #include "assert.h"
 #include "kmalloc.h"
@@ -19,11 +20,46 @@
 #include "time.h"
 
 extern sched_policy_t sched_rr;
-static kernel_info_t  kinfo;
+kernel_info_t         kinfo;
 //static tcb_t          init_tcb;
 
 void arch_init(void);
 void arch_return_to_user(void);
+
+void load_boot_modules(void)
+{
+    size_t    no_modules = kinfo.no_modules;
+    elf_ctx_t module_ctx;
+    int       err;
+
+    // identity map the necessary memory range for easier initialization
+
+    //    extern struct bootstrap_mman bootstrap_mman;
+
+    memset(&module_ctx, 0, sizeof(elf_ctx_t));
+
+    for (size_t i = 0; i < no_modules; i++) {
+
+        struct boot_module* module       = &kinfo.modules[i];
+        vaddr_t             module_start = module->start_vaddr;
+        size_t              module_size  = module->end_paddr - module->start_paddr;
+        //        proc_t*             proc         = (proc_t*)kmalloc(sizeof(proc_t));
+
+        log(INFO, "Loading module %s...", module->name);
+
+        if ((err = elf_ctx_create(&module_ctx, (uint8_t*)module_start, module_size)) != ELF_OK) {
+            log(ERR, "Failed to load module %s: %s", module->name, elf_strerror(err));
+            panic("Unable to load boot modules!");
+        }
+
+        if ((err = elf_ctx_load(&module_ctx, NULL)) != ELF_OK) {
+            log(ERR, "Failed to load module %s: %s", module->name, elf_strerror(err));
+            panic("Unable to load boot modules!");
+        }
+
+        // TODO: assign one page stack
+    }
+}
 
 void bootstrap(kernel_info_t* info)
 {
@@ -34,9 +70,12 @@ void bootstrap(kernel_info_t* info)
     console_init();
 
     log(INFO, "Bootstrap started");
-    log(INFO, "Initializing kernel memory");
+    bootstrap_identity_map_init_mem(&kinfo);
 
-    kmem_init();
+    log(INFO, "Initializing kernel memory");
+    kmem_init(&kinfo);
+
+    load_boot_modules();
 
     arch_init();
 

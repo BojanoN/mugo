@@ -1,16 +1,17 @@
 #include <arch/info.h>
 #include <arch/paging.h>
+#include <kern/conf.h>
 
-extern page_directory_t page_directory;
-extern page_table_t     kernel_pt;
+extern page_directory_t boot_page_directory;
 extern page_table_t     boot_pt;
+extern page_table_t     boot_kernel_pt;
 
 // ldscript symbols
 extern unsigned int __kernel_start, __ktable_start, __kernel_end, K_HIGH_VMA;
 extern unsigned int __early_start, __early_end;
 
-__attribute__((section(".boot.data"))) uint8_t       early_stack[0x1000] = { 0 };
-__attribute__((section(".boot.data"))) kernel_info_t kinfo               = { 0 };
+__attribute__((section(".boot.data"))) uint8_t              early_stack[0x1000] = { 0 };
+static __attribute__((section(".boot.data"))) kernel_info_t kinfo               = { 0 };
 
 __attribute__((section(".boot.text"))) void early_console_write_string(const char* str)
 {
@@ -51,12 +52,13 @@ __attribute__((section(".boot.text"))) void early_panic(const char* str)
     early_console_write_string(str);
     asm("hlt\t\n");
 }
+
 __attribute__((section(".boot.text"))) void
 early_page_map()
 {
     unsigned int  k_vma               = (unsigned int)&K_HIGH_VMA;
-    page_table_t* kernel_pt_phys      = (page_table_t*)((unsigned int)&kernel_pt - k_vma);
-    page_table_t* page_directory_phys = (page_table_t*)((unsigned int)&page_directory - k_vma);
+    page_table_t* kernel_pt_phys      = (page_table_t*)((unsigned int)&boot_kernel_pt - k_vma);
+    page_table_t* page_directory_phys = (page_table_t*)((unsigned int)&boot_page_directory - k_vma);
 
     unsigned int current_pt_offset = 0;
 
@@ -106,47 +108,121 @@ early_page_map()
     page_directory_phys->entries[kernel_pd_offset] = ((arch_pd_entry_t)kernel_pt_phys & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 }
 
-__attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_magic, struct multiboot_info* multiboot_info_ptr)
+__attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_magic, paddr_t multiboot_img_ptr)
 {
 
-    if (multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+    if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
         early_panic("The kernel was not booted by a multiboot compliant bootloader!");
     }
 
-    if (!(multiboot_info_ptr->flags & MULTIBOOT_INFO_MEM_MAP)) {
+    unsigned int k_vma = (unsigned int)&K_HIGH_VMA;
+
+    kinfo.kernel_phys_range.start = (paddr_t)((unsigned int)&__kernel_start - k_vma);
+    kinfo.kernel_phys_range.end   = (paddr_t)((unsigned int)&__kernel_end - k_vma);
+
+    kinfo.bootstrap_memory_phys_range.start = kinfo.bootstrap_memory_phys_range.end = kinfo.kernel_phys_range.end;
+
+    kinfo.kernel_high_vma   = (vaddr_t)k_vma;
+    kinfo.kernel_size_bytes = kinfo.kernel_phys_range.end - kinfo.kernel_phys_range.start;
+
+    // Adjust free physical pages in first mmap
+    multiboot_memory_map_t* mmap = &kinfo.memmaps[0];
+    mmap->len -= kinfo.kernel_size_bytes;
+    mmap->addr = kinfo.kernel_phys_range.end;
+
+    /* Parse multiboot tags */
+    int saved_mmap_index = 0;
+    int module_index     = 0;
+
+    /* Module copying metadata */
+    paddr_t last_module_end_addr = kinfo.kernel_phys_range.end;
+
+    kinfo.no_mmaps  = 0;
+    kinfo.mem_upper = 0;
+
+    for (struct multiboot_tag* tag = (struct multiboot_tag*)(multiboot_img_ptr + 8);
+         tag->type != MULTIBOOT_TAG_TYPE_END;
+         tag = (struct multiboot_tag*)((multiboot_uint8_t*)tag + ((tag->size + 7) & ~7))) {
+
+        switch (tag->type) {
+
+        case MULTIBOOT_TAG_TYPE_MMAP: {
+            multiboot_memory_map_t* entry         = 0;
+            paddr_t                 mmap_end_addr = (paddr_t)(multiboot_uint8_t*)tag + tag->size;
+            size_t                  entry_size    = ((struct multiboot_tag_mmap*)tag)->entry_size;
+
+            for (paddr_t curr_addr = (paddr_t)((struct multiboot_tag_mmap*)tag)->entries;
+                 curr_addr < mmap_end_addr && (saved_mmap_index + 1) < NO_MEMMAPS;
+                 curr_addr += entry_size) {
+
+                entry = (multiboot_memory_map_t*)curr_addr;
+
+                if (entry->type != MULTIBOOT_MEMORY_AVAILABLE || entry->addr < 0x100000) {
+                    continue;
+                }
+
+                kinfo.memmaps[saved_mmap_index] = *entry;
+                saved_mmap_index++;
+                kinfo.no_mmaps++;
+            }
+            break;
+        }
+        case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
+            kinfo.mem_upper = ((struct multiboot_tag_basic_meminfo*)tag)->mem_upper;
+            break;
+
+        case MULTIBOOT_TAG_TYPE_MODULE: {
+            if ((module_index + 1) > NO_MODULES) {
+                break;
+            }
+
+            struct multiboot_tag_module* mb_module = (struct multiboot_tag_module*)tag;
+            struct boot_module*          module    = &kinfo.modules[module_index];
+
+            module->start_paddr = last_module_end_addr;
+            // TODO: paranoia - check if the end_paddr is page aligned
+            module->end_paddr = last_module_end_addr + mb_module->size;
+
+            /* Copy the module right next to the kernel */
+            uint8_t* end = (uint8_t*)mb_module->mod_end;
+            uint8_t* dst = (uint8_t*)module->start_paddr;
+
+            for (uint8_t* src = (uint8_t*)mb_module->mod_start; src < end; src++, dst++) {
+                *dst = *src;
+            }
+
+            last_module_end_addr = (paddr_t)module->end_paddr;
+
+            char* p = mb_module->cmdline;
+            int   i = 0;
+
+            while (*p && (i < (MAX_MODULE_NAME_LEN - 1))) {
+                module->name[i++] = *p++;
+            }
+            *p++ = 0;
+
+            module_index++;
+            kinfo.no_modules++;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    if (!kinfo.no_mmaps) {
         early_panic("No Multiboot memory map was found!");
     }
 
-    // TODO: clear boot PT mappings
-    if (!(multiboot_info_ptr->flags & MULTIBOOT_INFO_MEMORY)) {
+    if (!kinfo.mem_upper) {
         early_panic("Unable to probe for free memory!");
     }
 
-    paddr_t mmap_length   = multiboot_info_ptr->mmap_length;
-    paddr_t mmap_addr     = multiboot_info_ptr->mmap_addr;
-    paddr_t mmap_end_addr = mmap_addr + mmap_length;
-
-    // paddr_t kernel_size = (paddr_t)&__kernel_end - (paddr_t)&__kernel_start;
-
-    // Scan the memory map and determine total number of available frames
-    paddr_t                 curr_addr = mmap_addr;
-    multiboot_memory_map_t* entry;
-    int                     saved_mmap_index = 0;
-
-    while (curr_addr < mmap_end_addr) {
-        entry = (multiboot_memory_map_t*)curr_addr;
-
-        if (entry->type != MULTIBOOT_MEMORY_AVAILABLE) {
-            curr_addr += entry->size + sizeof(multiboot_memory_map_t*);
-            continue;
-        }
-
-        kinfo.memmaps[saved_mmap_index] = *entry;
-        saved_mmap_index++;
-        curr_addr += entry->size + sizeof(multiboot_memory_map_t*);
+    if (!kinfo.no_modules) {
+        early_panic("No modules loaded!");
     }
 
-    kinfo.mmap_size = saved_mmap_index + 1;
+    // TODO: check if sufficient memory is available
 
     early_page_map();
 

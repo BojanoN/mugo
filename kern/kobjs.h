@@ -60,6 +60,8 @@ typedef struct proc {
 
     vaddr_t stack_base;
 
+    paddr_t page_dir;
+
     size_t priority;
 
     tcb_t* threads;

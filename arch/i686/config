@@ -2,6 +2,6 @@ CFLAGS := -ffreestanding -nostdlib -fno-plt -fno-pic -fno-pie -mno-mmx -mno-sse 
 QEMU = qemu-system-i386
 ASMFLAGS = -felf32 -w+error=all
 ASM := nasm
-CC = ./toolchain/tools/bin/i686-elf-gcc
-LDSCRIPT = ./arch/i686/link.ld
-LDFLAGS :=
+CC = $(ROOT_DIR)/toolchain/tools/bin/i686-elf-gcc
+LDSCRIPT = $(ROOT_DIR)/arch/i686/link.ld
+LDFLAGS := -T $(LDSCRIPT)
