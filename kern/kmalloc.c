@@ -38,14 +38,14 @@ static vaddr_t page_freelist_head = PAGE_FREELIST_SENTINEL;
 
 static bag_t bags[NO_CLASSES] = { 0 };
 
-static inline void free_page(vaddr_t page)
+/*static inline void free_page(vaddr_t page)
 {
     ASSERT_MSG(page < pool_start && page >= pool_end, "Invalid page freed");
 
     *((vaddr_t*)page)  = page_freelist_head;
     page_freelist_head = page;
 }
-
+*/
 static inline vaddr_t fetch_page(void)
 {
     if (page_freelist_head == PAGE_FREELIST_SENTINEL) {

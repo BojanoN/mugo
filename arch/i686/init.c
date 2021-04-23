@@ -1,28 +1,29 @@
-#include <arch/info.h>
 #include <arch/interrupt.h>
-#include <arch/multiboot.h>
 #include <arch/objs.h>
 #include <arch/util.h>
 
 #include "boot/gdt.h"
 #include "drivers/pic.h"
 #include "drivers/timer.h"
-#include "idt.h"
 #include "regs.h"
 
-extern void       page_fault_handler(irq_context_t registers);
+#include "idt.h"
+
+
+void       page_fault_handler(irq_context_t registers);
 extern struct tss tss;
 
 void arch_kcall_entry(void);
 
 void arch_init(void)
 {
-
-    init_gdt();
+  int x = 1;
+  x++;
+  init_gdt();
     PIC_init();
-    init_idt();
+     init_idt();
 
-    register_interrupt_callback(0xe, page_fault_handler);
+  register_interrupt_callback(0xe, page_fault_handler);
 
     // Configure sysenter
     msr_write(I386_SYSENTER_CS, 0x8);

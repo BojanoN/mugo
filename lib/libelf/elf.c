@@ -13,10 +13,6 @@ static inline Elf_Shdr* elf_get_sheader(Elf_Hdr* hdr)
     return (Elf_Shdr*)((int)hdr + hdr->e_shoff);
 }
 
-static inline Elf_Shdr* elf_get_section(Elf_Hdr* hdr, int idx)
-{
-    return &elf_get_sheader(hdr)[idx];
-}
 
 static int elf_check_hdr(Elf_Hdr* hdr)
 {

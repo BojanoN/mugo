@@ -3,7 +3,7 @@ PROJECT = os.elf
 ARCH = i686
 ROOT_DIR =  $(shell pwd)
 
-include arch/$(ARCH)/config
+.include <arch/$(ARCH)/config>
 
 DIRS := $(ROOT_DIR)/kern $(ROOT_DIR)/arch/$(ARCH) $(ROOT_DIR)/arch/$(ARCH)/boot $(ROOT_DIR)/arch/$(ARCH)/drivers $(ROOT_DIR)/lib/stdlib $(ROOT_DIR)/lib/libelf
 FILES := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.c $(dir)/*.s $(dir)/*.ld.pre))
