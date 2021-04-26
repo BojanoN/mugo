@@ -1,16 +1,16 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.15.0)
 
 
-project(praxOS C)
+project(Mugo C)
 
-include(Macros.cmake)
+#include(Macros.cmake)
 
 # TODO determine via variable
 set(TARGET_ARCH i686)
 set(OUTPUT_FILE os.elf)
 
 set(CMAKE_C_COMPILER "${CMAKE_CURRENT_SOURCE_DIR}/toolchain/llvm-project/build/bin/clang")
-set(CMAKE_C_CLANG_TIDY "clang-tidy10;-checks=*")
+#set(CMAKE_C_CLANG_TIDY "clang-tidy10;-checks=*")
 
 message(STATUS "Build target: " ${TARGET_ARCH})
 
@@ -42,6 +42,7 @@ list(TRANSFORM kernel_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(lib_sources
   ./lib/stdlib/stdlib.c
   ./lib/libelf/elf.c
+  ./lib/crt/crt.c
   )
 
 list(TRANSFORM lib_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
