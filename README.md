@@ -1,2 +1,2 @@
-# os
-A hobby kernel.
+# mugo  
+A pine-scented hobby microkernel.
