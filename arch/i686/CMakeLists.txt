@@ -12,7 +12,7 @@ set(CMAKE_ASM_NASM_SOURCE_FILE_EXTENSIONS "s" PARENT_SCOPE)
 set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <FLAGS> -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o <OBJECT> <SOURCE>" PARENT_SCOPE)
 
 target_include_directories(${OUTPUT_FILE} PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_options(${OUTPUT_FILE} PUBLIC -T ${CMAKE_CURRENT_SOURCE_DIR}/link.ld  -fuse-ld=lld -v)
+target_link_options(${OUTPUT_FILE} PUBLIC --prefix ${TOOLCHAIN_DIR} -T ${CMAKE_CURRENT_SOURCE_DIR}/link.ld  -fuse-ld=lld -v)
 
 set(c_sources
   panic.c

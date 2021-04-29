@@ -9,8 +9,10 @@ project(Mugo C)
 set(TARGET_ARCH i686)
 set(OUTPUT_FILE os.elf)
 
-set(CMAKE_C_COMPILER "${CMAKE_CURRENT_SOURCE_DIR}/toolchain/llvm-project/build/bin/clang")
-#set(CMAKE_C_CLANG_TIDY "clang-tidy10;-checks=*")
+set(TOOLCHAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/toolchain/llvm/build/bin)
+
+set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/clang")
+#set(CMAKE_C_CLANG_TIDY "clang-tidy;-checks=*")
 
 message(STATUS "Build target: " ${TARGET_ARCH})
 
@@ -47,6 +49,7 @@ set(lib_sources
 
 list(TRANSFORM lib_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 
+target_compile_definitions(${OUTPUT_FILE} PRIVATE __MUGO_KERNEL__)
 target_sources(${OUTPUT_FILE}
   PRIVATE
   ${kernel_sources}
@@ -54,7 +57,5 @@ target_sources(${OUTPUT_FILE}
   )
 
 
-#add_subdirectory(./kern)
-#add_subdirectory(./lin)
 
 
