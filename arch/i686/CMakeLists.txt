@@ -5,7 +5,7 @@ enable_language(ASM_NASM)
 
 
 
-set(CMAKE_C_FLAGS "-O2 -Wall -Werror -Wextra -Wno-unused-parameter  -target i686-pc-mugo-elf -march=i686 -ffreestanding -nostdlib -fno-builtin  -fno-pie -fno-pic -mno-mmx -mno-sse -mno-sse2" PARENT_SCOPE)
+set(CMAKE_C_FLAGS "-Wall -Werror -Wextra -Wno-unused-parameter  -target i686-pc-mugo-elf -march=i686 -ffreestanding -nostdlib -fno-builtin  -fno-pie -fno-pic -mno-mmx -mno-sse -mno-sse2" PARENT_SCOPE)
 set(CMAKE_ASM_NASM_FLAGS "-felf32 -w+error=all" PARENT_SCOPE)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf32)
 set(CMAKE_ASM_NASM_SOURCE_FILE_EXTENSIONS "s" PARENT_SCOPE)

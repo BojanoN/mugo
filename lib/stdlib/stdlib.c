@@ -190,20 +190,15 @@ unsigned int strlen(const char* str)
     return len;
 }
 
-void* memset(void* dst, int c, size_t n)
+void* memset(void* s, int c, size_t n)
 {
-    if (dst == NULL) {
-        return NULL;
-    }
+    size_t p;
+    char*  m = (char*)s;
 
-    uint8_t* byte_dst = (uint8_t*)dst;
-    while (n > 0) {
-        *byte_dst = (uint8_t)c;
-        byte_dst++;
-        n--;
-    }
+    for (p = 0; p < n; p++, m++)
+        *m = (char)c;
 
-    return dst;
+    return s;
 }
 
 void* memcpy(void* dest, const void* src, size_t n)

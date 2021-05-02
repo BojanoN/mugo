@@ -41,7 +41,7 @@ void load_boot_modules(void)
     for (size_t i = 0; i < no_modules; i++) {
 
         struct boot_module* module       = &kinfo.modules[i];
-        vaddr_t             module_start = module->start_vaddr;
+        vaddr_t             module_start = module->start_paddr;
         size_t              module_size  = module->end_paddr - module->start_paddr;
         //        proc_t*             proc         = (proc_t*)kmalloc(sizeof(proc_t));
 
@@ -72,10 +72,10 @@ void bootstrap(kernel_info_t* info)
     log(INFO, "Bootstrap started");
     bootstrap_identity_map_init_mem(&kinfo);
 
+    load_boot_modules();
+
     log(INFO, "Initializing kernel memory");
     kmem_init(&kinfo);
-
-    load_boot_modules();
 
     arch_init();
 

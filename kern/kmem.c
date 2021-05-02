@@ -137,6 +137,7 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
 
         phys_end += (module_size & ARCH_PAGE_MASK) + ARCH_PAGE_SIZE;
     }
+    // TODO: Map
 }
 
 paddr_t bootstrap_create_page_dir(void)
@@ -195,11 +196,14 @@ extern unsigned int __kernel_heap_start;
 void kmem_init(kernel_info_t* info)
 {
     log(INFO, "Remapping kernel");
-    kinfo           = info;
-    paddr_t pd_phys = (paddr_t)((vaddr_t)&page_directory - (unsigned int)kinfo->kernel_high_vma);
+    kinfo = info;
+
+    paddr_t pd_phys           = (paddr_t)((vaddr_t)&page_directory - (unsigned int)kinfo->kernel_high_vma);
+    paddr_t bootstrap_pt_phys = ((paddr_t)&bootstrap_pt) - (paddr_t)kinfo->kernel_high_vma;
 
     size_t kernel_pd_offset                  = ((vaddr_t)&K_HIGH_VMA & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
     page_directory.entries[kernel_pd_offset] = (((vaddr_t)&kernel_pt - (vaddr_t)&K_HIGH_VMA) & PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+    page_directory.entries[0]                = ((pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 
     map_kernel_memory();
 
@@ -223,11 +227,19 @@ void map_kernel_memory(void)
     vaddr_t kernel_stack_end   = (vaddr_t)&__kernel_stack_end;
 
     paddr_t kernel_start_phys = (paddr_t)kernel_start - (vaddr_t)&K_HIGH_VMA; //(paddr_t)&__early_start;
-
-    paddr_t curr_addr_phys = kernel_start_phys;
-    vaddr_t curr_addr      = kernel_start;
+    paddr_t curr_addr_phys    = kernel_start_phys;
+    vaddr_t curr_addr         = kernel_start;
 
     size_t size = ktable_end - kernel_start;
+
+    // Identity map first MB for now
+    // Clear bootostrap mappings
+    memset(&bootstrap_pt.entries[0], 0, sizeof(page_table_t));
+    size_t current_pt_offset = 0;
+
+    for (unsigned int addr = 0; addr < 0x100000; addr += PAGE_SIZE, current_pt_offset++) {
+        bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+    }
 
     // .ktable
     kmap(curr_addr, curr_addr_phys, size, KMAP_PROT_READ | KMAP_PROT_WRITE);

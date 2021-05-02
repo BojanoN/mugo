@@ -90,6 +90,15 @@ early_page_map()
         phys_addr                          = early_phys_start + i;
         boot_pt.entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
+    // Identity map loaded modules
+    for (size_t i = 0; i < kinfo.no_modules; i++) {
+        struct boot_module* module = &kinfo.modules[i];
+        current_pt_offset          = (module->start_paddr & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
+        paddr_t end                = (module->end_paddr & (module->end_paddr - 1)) ? ((module->end_paddr & ARCH_PAGE_MASK) + ARCH_PAGE_SIZE) : module->end_paddr;
+        for (paddr_t addr = module->start_paddr; addr < end; addr += PAGE_SIZE, current_pt_offset++) {
+            boot_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        }
+    }
 
     // PT offset for kernel mapping
     current_pt_offset             = (k_start_vaddr & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
@@ -108,7 +117,7 @@ early_page_map()
     page_directory_phys->entries[kernel_pd_offset] = ((arch_pd_entry_t)kernel_pt_phys & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 }
 
-__attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_magic, paddr_t multiboot_img_ptr)
+__attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t multiboot_magic, paddr_t multiboot_img_ptr)
 {
 
     if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
@@ -161,7 +170,12 @@ __attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_mag
                     continue;
                 }
 
-                kinfo.memmaps[saved_mmap_index] = *entry;
+                multiboot_memory_map_t* dst = &kinfo.memmaps[saved_mmap_index];
+                dst->addr                   = entry->addr;
+                dst->len                    = entry->len;
+                dst->type                   = entry->type;
+                dst->zero                   = entry->zero;
+
                 saved_mmap_index++;
                 kinfo.no_mmaps++;
             }
@@ -181,7 +195,7 @@ __attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_mag
 
             module->start_paddr = last_module_end_addr;
             // TODO: paranoia - check if the end_paddr is page aligned
-            module->end_paddr = last_module_end_addr + mb_module->size;
+            module->end_paddr = last_module_end_addr + (mb_module->mod_end - mb_module->mod_start);
 
             /* Copy the module right next to the kernel */
             uint8_t* end = (uint8_t*)mb_module->mod_end;
@@ -225,6 +239,11 @@ __attribute__((section(".boot.text"))) paddr_t early_main(uint32_t multiboot_mag
     // TODO: check if sufficient memory is available
 
     early_page_map();
+
+    paddr_t k_phys_end = (paddr_t)((vaddr_t)&__kernel_end - k_vma);
+
+    kinfo.memmaps[0].len -= (size_t)(k_phys_end - kinfo.memmaps[0].addr);
+    kinfo.memmaps[0].addr = k_phys_end;
 
     return (paddr_t)&kinfo;
 }

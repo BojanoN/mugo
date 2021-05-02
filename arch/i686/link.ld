@@ -60,7 +60,7 @@ SECTIONS {
 . = ALIGN(4K);
   __kernel_bss_end = .;
   .rodata ALIGN(4K) : AT(ADDR (.rodata) - K_HIGH_VMA){
-     *(.rodata)
+     *(.rodata*)
   }
 
 . = ALIGN(4K);

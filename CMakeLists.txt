@@ -12,7 +12,7 @@ set(OUTPUT_FILE os.elf)
 set(TOOLCHAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/toolchain/llvm/build/bin)
 
 set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/clang")
-#set(CMAKE_C_CLANG_TIDY "clang-tidy;-checks=*")
+#set(CMAKE_C_CLANG_TIDY "${TOOLCHAIN_DIR}/clang-tidy;-checks=*")
 
 message(STATUS "Build target: " ${TARGET_ARCH})
 
