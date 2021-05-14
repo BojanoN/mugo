@@ -1,7 +1,7 @@
 #include <arch/paging.h>
+#include <exec.h>
 #include <kern/util.h>
 #include <stdlib.h>
-#include <sys/mem_cb.h>
 
 #include <arch/info.h>
 #include <types/base.h>
@@ -94,20 +94,11 @@ void page_fault_handler(irq_context_t registers)
  * Boot module loading routines/structs
  */
 
-int bootstrap_mmap(vaddr_t vaddr, size_t size, unsigned int flags);
-
-struct bootstrap_mman {
-    proc_t*        active_proc;
-    mem_callback_t callbacks;
-} bootstrap_mman = {
-    NULL,
-    { bootstrap_mmap }
-};
-
 static paddr_t bootstrap_fetch_page(void)
 {
-
     paddr_t page = kinfo->memmaps[0].addr;
+    ASSERT_MSG(kinfo->memmaps[0].len > ARCH_PAGE_SIZE, "Out of pages");
+
     kinfo->memmaps[0].addr += ARCH_PAGE_SIZE;
     kinfo->memmaps[0].len -= ARCH_PAGE_SIZE;
     return page;
@@ -121,7 +112,7 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
 
     ASSERT(phys_start % ARCH_PAGE_SIZE == 0);
 
-    paddr_t bootstrap_pt_phys   = (vaddr_t)&bootstrap_pt - info->kernel_high_vma;
+    paddr_t bootstrap_pt_phys   = (vaddr_t)&bootstrap_pt - (paddr_t)info->kernel_high_vma;
     size_t  bootstrap_pd_offset = (phys_start & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
 
     page_directory.entries[bootstrap_pd_offset] = ((arch_pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
@@ -137,38 +128,41 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
 
         phys_end += (module_size & ARCH_PAGE_MASK) + ARCH_PAGE_SIZE;
     }
+
     // TODO: Map
+    memset(&bootstrap_pt.entries[0], 0, sizeof(page_table_t));
+    size_t current_pt_offset = (phys_start & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
+
+    for (unsigned int addr = phys_start; addr < phys_end; addr += PAGE_SIZE, current_pt_offset++) {
+        bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+    }
+
+    paddr_t pd_phys = (paddr_t)((vaddr_t)&boot_page_directory - (vaddr_t)info->kernel_high_vma);
+
+    boot_page_directory.entries[0] = ((pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+    arch_load_pagetable(pd_phys);
 }
 
-paddr_t bootstrap_create_page_dir(void)
+paddr_t bootstrap_create_page_dir(exec)
 {
-    paddr_t page = bootstrap_fetch_page();
-
-    bootstrap_mman.active_proc->page_dir = page;
-
-    return page;
+    return bootstrap_fetch_page();
 }
 
-int bootstrap_mmap(vaddr_t vaddr, size_t size, unsigned int flags)
+int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags)
 {
-    /*
-    ASSERT(bootstrap_mman->active_proc != NULL);
 
-    paddr_t pd        = bootstrap_mman.active_proc->page_dir;
-    size_t  pd_offset = (vaddr & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
-    size_t  pt_offset = (vaddr & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
+    ASSERT(vaddr % ARCH_PAGE_SIZE == 0);
+    ASSERT(paddr % ARCH_PAGE_SIZE == 0);
+    ASSERT(size % ARCH_PAGE_SIZE == 0);
 
     paddr_t pg_flags = 0;
 
-    if (flags != KMAP_PROT_NONE) {
-        unsigned int wr = flags & KMAP_PROT_WRITE;
-        unsigned int rd = flags & KMAP_PROT_READ;
+    unsigned int wr = flags & KMAP_PROT_WRITE;
+    unsigned int rd = flags & KMAP_PROT_READ;
 
-        if (!rd && !wr) {
-            log(WARN, "No PROT_[READ | WRITE] specified; mapping 0x%08x as PROT_NONE", vaddr);
-            goto load;
-        }
-
+    if (!rd && !wr) {
+        log(WARN, "No PROT_[READ | WRITE] specified; mapping 0x%08x as PROT_NONE", vaddr);
+    } else if (flags != KMAP_PROT_NONE) {
         pg_flags = ARCH_PAGE_PRESENT;
 
         if (wr) {
@@ -180,10 +174,31 @@ int bootstrap_mmap(vaddr_t vaddr, size_t size, unsigned int flags)
         }
     }
 
-load:
+    page_directory_t* pd = (page_directory_t*)info->page_directory;
 
-    // kernel_pt.entries[pt_offset] = (paddr & PAGE_MASK) | pg_flags;
-    */
+    page_table_t* current_pt = (page_table_t*)arch_get_pt_offset(vaddr, ARCH_PD_0);
+    size_t        pd_offset  = (size_t)-1;
+
+    for (size_t offset = 0; offset < size; offset += ARCH_PAGE_SIZE) {
+        size_t vaddr_pd_offset = arch_get_pt_offset(vaddr + offset, ARCH_PD_1);
+
+        if (pd_offset != vaddr_pd_offset) {
+            pd_offset            = vaddr_pd_offset;
+            page_table_t* new_pt = (page_table_t*)(pd->entries[pd_offset] & ARCH_PAGE_MASK);
+
+            if (new_pt) {
+                current_pt = new_pt;
+            } else {
+                new_pt                 = (page_table_t*)bootstrap_fetch_page();
+                pd->entries[pd_offset] = ((paddr_t)new_pt & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+            }
+        }
+
+        size_t  pt_offset              = arch_get_pt_offset(vaddr + offset, ARCH_PD_0);
+        paddr_t frame_addr             = bootstrap_fetch_page();
+        current_pt->entries[pt_offset] = ((frame_addr)&PAGE_MASK) | pg_flags;
+    }
+
     return 0;
 }
 
@@ -226,10 +241,6 @@ void map_kernel_memory(void)
     vaddr_t kernel_stack_start = (vaddr_t)&__kernel_stack_start;
     vaddr_t kernel_stack_end   = (vaddr_t)&__kernel_stack_end;
 
-    paddr_t kernel_start_phys = (paddr_t)kernel_start - (vaddr_t)&K_HIGH_VMA; //(paddr_t)&__early_start;
-    paddr_t curr_addr_phys    = kernel_start_phys;
-    vaddr_t curr_addr         = kernel_start;
-
     size_t size = ktable_end - kernel_start;
 
     // Identity map first MB for now
@@ -240,6 +251,10 @@ void map_kernel_memory(void)
     for (unsigned int addr = 0; addr < 0x100000; addr += PAGE_SIZE, current_pt_offset++) {
         bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
+
+    paddr_t kernel_start_phys = (paddr_t)kernel_start - (vaddr_t)&K_HIGH_VMA; //(paddr_t)&__early_start;
+    paddr_t curr_addr_phys    = kernel_start_phys;
+    vaddr_t curr_addr         = kernel_start;
 
     // .ktable
     kmap(curr_addr, curr_addr_phys, size, KMAP_PROT_READ | KMAP_PROT_WRITE);

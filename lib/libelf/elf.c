@@ -1,4 +1,6 @@
-//#include <log.h>
+//TODO: #include <log.h>
+#include <exec.h>
+#include <stdlib.h>
 #include <sys/elf.h>
 
 static uint8_t elf_magic[4] = {
@@ -12,7 +14,6 @@ static inline Elf_Shdr* elf_get_sheader(Elf_Hdr* hdr)
 {
     return (Elf_Shdr*)((int)hdr + hdr->e_shoff);
 }
-
 
 static int elf_check_hdr(Elf_Hdr* hdr)
 {
@@ -79,8 +80,12 @@ int elf_ctx_create(elf_ctx_t* ctx, uint8_t* buf, size_t size)
     return ELF_OK;
 }
 
-int elf_ctx_load(elf_ctx_t* ctx, void* mem_callback)
+int elf_ctx_load(elf_ctx_t* ctx, exec_info_t* info)
 {
+    if (!(info && info->mmap)) {
+        return ELF_INVALID_HDR;
+    }
+
     size_t no_pheaders = ctx->elf_hdr->e_phnum;
 
     for (size_t i = 0; i < no_pheaders; i++) {
@@ -103,6 +108,12 @@ int elf_ctx_load(elf_ctx_t* ctx, void* mem_callback)
         if (phdr->p_filesz == 0) {
             continue;
         }
+
+        // TODO: flags
+        // invoke mmap callback function, allocate physical frames and map header
+        info->mmap(info, PAGE_ALLOCATE, phdr->p_vaddr, phdr->p_memsz, 0);
+        // Copy header contents
+        memcpy((void*)phdr->p_vaddr, (uint8_t*)ctx->elf_hdr + phdr->p_offset, phdr->p_filesz);
     }
 
     return ELF_OK;

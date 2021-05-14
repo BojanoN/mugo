@@ -55,3 +55,9 @@ enum Ph_Types {
     PT_LOAD,
     PT_DYNAMIC,
 };
+
+enum Ph_Flags {
+    PF_X = 0x1,
+    PF_W = 0x2,
+    PF_R = 0x4
+};

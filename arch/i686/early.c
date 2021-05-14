@@ -79,8 +79,8 @@ early_page_map()
 
     // Identity map the first MB
     for (unsigned int i = 0; i < 0x100000; i += PAGE_SIZE, current_pt_offset++) {
-        phys_addr                                  = i;
-        kernel_pt_phys->entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        phys_addr                          = i;
+        boot_pt.entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
 
     // boot code mapping
