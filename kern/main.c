@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include <console.h>
+#include <exec.h>
 #include <stdlib.h>
 #include <sys/elf.h>
 
@@ -26,24 +27,51 @@ kernel_info_t         kinfo;
 void arch_init(void);
 void arch_return_to_user(void);
 
+static proc_t boot_processes[CONF_MAX_BOOT_MODULES] = { 0 };
+
 void load_boot_modules(void)
 {
-    size_t    no_modules = kinfo.no_modules;
-    elf_ctx_t module_ctx;
-    int       err;
+    size_t              no_modules = kinfo.no_modules;
+    elf_ctx_t           module_ctx;
+    int                 err;
+    extern page_table_t kernel_pt;
+    extern page_table_t bootstrap_pt;
 
     // identity map the necessary memory range for easier initialization
 
-    //    extern struct bootstrap_mman bootstrap_mman;
+    ASSERT_MSG(no_modules < CONF_MAX_BOOT_MODULES, "Too much boot modules loaded");
 
     memset(&module_ctx, 0, sizeof(elf_ctx_t));
+    exec_info_t info = { 0 };
+
+    paddr_t bootstrap_pt_phys   = (vaddr_t)&bootstrap_pt - (paddr_t)kinfo.kernel_high_vma;
+    size_t  bootstrap_pt_offset = arch_get_pt_offset(kinfo.bootstrap_memory_phys_range.start, ARCH_PD_1);
+    size_t  kernel_pt_offset    = arch_get_pt_offset(kinfo.kernel_phys_range.start + kinfo.kernel_high_vma, ARCH_PD_1);
+    paddr_t kernel_pt_phys      = (((vaddr_t)&kernel_pt - (vaddr_t)kinfo.kernel_high_vma) & PAGE_MASK);
 
     for (size_t i = 0; i < no_modules; i++) {
 
         struct boot_module* module       = &kinfo.modules[i];
         vaddr_t             module_start = module->start_paddr;
         size_t              module_size  = module->end_paddr - module->start_paddr;
-        //        proc_t*             proc         = (proc_t*)kmalloc(sizeof(proc_t));
+        proc_t*             proc         = &boot_processes[i];
+
+        paddr_t pd_addr = bootstrap_create_page_dir();
+        if (pd_addr == 0) {
+            panic("Unable to create page directory for module");
+        }
+
+        memset((void*)pd_addr, 0, ARCH_PAGE_SIZE);
+        info.page_directory = pd_addr;
+        info.mmap           = bootstrap_mmap;
+        proc->page_dir      = pd_addr;
+
+        // Create paging structures, map kernel
+        page_directory_t* module_pd             = (page_directory_t*)pd_addr;
+        module_pd->entries[kernel_pt_offset]    = kernel_pt_phys | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+        module_pd->entries[bootstrap_pt_offset] = bootstrap_pt_phys | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+
+        arch_load_pagetable(pd_addr);
 
         log(INFO, "Loading module %s...", module->name);
 
@@ -52,12 +80,13 @@ void load_boot_modules(void)
             panic("Unable to load boot modules!");
         }
 
-        if ((err = elf_ctx_load(&module_ctx, NULL)) != ELF_OK) {
+        if ((err = elf_ctx_load(&module_ctx, &info)) != ELF_OK) {
             log(ERR, "Failed to load module %s: %s", module->name, elf_strerror(err));
             panic("Unable to load boot modules!");
         }
 
         // TODO: assign one page stack
+        proc->stack_base = CONF_PROCESS_STACK_BASE;
     }
 }
 
@@ -70,11 +99,14 @@ void bootstrap(kernel_info_t* info)
     console_init();
 
     log(INFO, "Bootstrap started");
+
+    log(INFO, "Initializing kernel memory");
+    map_kernel_memory(&kinfo);
+
     bootstrap_identity_map_init_mem(&kinfo);
 
     load_boot_modules();
 
-    log(INFO, "Initializing kernel memory");
     kmem_init(&kinfo);
 
     arch_init();

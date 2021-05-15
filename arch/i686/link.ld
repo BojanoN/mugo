@@ -1,13 +1,8 @@
 ENTRY(_start)
 
 K_BOOT_VMA = 0x00100000;
-K_HIGH_VMA = 0xC0000000;
+K_HIGH_VMA = 0xFE800000; /*0xC0000000; */
 
-K_HEAP_VMA = 0xD0000000;
-K_HEAP_SIZE = 0x100000;
-K_DRIVERS_VMA = 0xE0000000;
-K_METADATA_VMA = 0xF0000000;
-K_METADATA_SIZE =  0x80000;
 
 SECTIONS {
 
@@ -85,5 +80,7 @@ SECTIONS {
 
   __kernel_end = .;
 
+  __console_debug = .;
+  . += 4K;
 
 }

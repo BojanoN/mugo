@@ -90,28 +90,21 @@ early_page_map()
         phys_addr                          = early_phys_start + i;
         boot_pt.entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
-    // Identity map loaded modules
-    for (size_t i = 0; i < kinfo.no_modules; i++) {
-        struct boot_module* module = &kinfo.modules[i];
-        current_pt_offset          = (module->start_paddr & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
-        paddr_t end                = (module->end_paddr & (module->end_paddr - 1)) ? ((module->end_paddr & ARCH_PAGE_MASK) + ARCH_PAGE_SIZE) : module->end_paddr;
-        for (paddr_t addr = module->start_paddr; addr < end; addr += PAGE_SIZE, current_pt_offset++) {
-            boot_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
-        }
-    }
 
     // PT offset for kernel mapping
     current_pt_offset             = (k_start_vaddr & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
     unsigned int kernel_pd_offset = (k_start_vaddr & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
 
     // Map the kernel
-    for (unsigned int i = 0; i < ((k_phys_end - k_phys_start) + PAGE_SIZE); i += PAGE_SIZE, current_pt_offset++) {
+    for (unsigned int i = 0; i < ((k_phys_end - k_phys_start)); i += PAGE_SIZE, current_pt_offset++) {
         phys_addr                                  = k_phys_start + i;
         kernel_pt_phys->entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
 
-    // Map VGA to  0xC03FF000
-    kernel_pt_phys->entries[1023] = ((0x000B8000 & 0xFFFFF000) | 0x003);
+    // Map VGA to
+    extern vaddr_t __console_debug;
+    current_pt_offset                          = ((vaddr_t)&__console_debug & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
+    kernel_pt_phys->entries[current_pt_offset] = ((0x00B8000 & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW));
 
     page_directory_phys->entries[0]                = ((arch_pd_entry_t)&boot_pt & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
     page_directory_phys->entries[kernel_pd_offset] = ((arch_pd_entry_t)kernel_pt_phys & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
@@ -145,6 +138,7 @@ __attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t mult
 
     /* Module copying metadata */
     paddr_t last_module_end_addr = kinfo.kernel_phys_range.end;
+    size_t  total_module_size    = 0;
 
     kinfo.no_mmaps  = 0;
     kinfo.mem_upper = 0;
@@ -196,10 +190,14 @@ __attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t mult
             module->start_paddr = last_module_end_addr;
             // TODO: paranoia - check if the end_paddr is page aligned
             module->end_paddr = last_module_end_addr + (mb_module->mod_end - mb_module->mod_start);
+            // page align
+            module->end_paddr = (module->end_paddr & ~ARCH_PAGE_MASK) ? ((module->end_paddr & ARCH_PAGE_MASK) + ARCH_PAGE_SIZE) : module->end_paddr;
 
             /* Copy the module right next to the kernel */
             uint8_t* end = (uint8_t*)mb_module->mod_end;
             uint8_t* dst = (uint8_t*)module->start_paddr;
+
+            total_module_size += (size_t)(module->end_paddr - module->start_paddr);
 
             for (uint8_t* src = (uint8_t*)mb_module->mod_start; src < end; src++, dst++) {
                 *dst = *src;
@@ -243,7 +241,8 @@ __attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t mult
     paddr_t k_phys_end = (paddr_t)((vaddr_t)&__kernel_end - k_vma);
 
     kinfo.memmaps[0].len -= (size_t)(k_phys_end - kinfo.memmaps[0].addr);
-    kinfo.memmaps[0].addr = k_phys_end;
+    kinfo.memmaps[0].len -= total_module_size;
+    kinfo.memmaps[0].addr = last_module_end_addr;
 
     return (paddr_t)&kinfo;
 }

@@ -7,6 +7,8 @@ typedef struct __attribute__((packed)) {
     uint8_t color_attrib;
 } vga_char_t;
 
+extern vaddr_t __console_debug;
+
 static const uint16_t VGA_WIDTH  = 80;
 static const uint16_t VGA_HEIGHT = 25;
 static const uint16_t VGA_TOTAL  = VGA_HEIGHT * VGA_WIDTH;
@@ -26,8 +28,9 @@ static uint8_t color_attrib = (0x0 << 4) | 0xF;
 void console_init()
 {
 
-    term_buff    = (vga_char_t*)0xC03FF000;
-    vga_cmd_port = (uint8_t*)0xC03FF3D4;
+    term_buff = (vga_char_t*)&__console_debug;
+    //    0xC03FF000;
+    vga_cmd_port = (uint8_t*)term_buff + 0x3D4;
     console_clear_screen();
     //console_move_cursor(0, 0);
 }

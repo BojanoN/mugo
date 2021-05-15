@@ -109,11 +109,12 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
 {
     paddr_t phys_start = info->memmaps[0].addr;
     paddr_t phys_end   = phys_start;
+    kinfo              = info;
 
     ASSERT(phys_start % ARCH_PAGE_SIZE == 0);
 
     paddr_t bootstrap_pt_phys   = (vaddr_t)&bootstrap_pt - (paddr_t)info->kernel_high_vma;
-    size_t  bootstrap_pd_offset = (phys_start & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
+    size_t  bootstrap_pd_offset = (phys_start & ARCH_VADDR_PD_OFFSET_MASK) >> ARCH_VADDR_PD_OFFSET;
 
     page_directory.entries[bootstrap_pd_offset] = ((arch_pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 
@@ -131,19 +132,35 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
 
     // TODO: Map
     memset(&bootstrap_pt.entries[0], 0, sizeof(page_table_t));
-    size_t current_pt_offset = (phys_start & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
+    size_t current_pt_offset = 0;
+
+    // Identity map loaded modules
+    for (size_t i = 0; i < kinfo->no_modules; i++) {
+        struct boot_module* module = &kinfo->modules[i];
+        current_pt_offset          = (module->start_paddr & ARCH_VADDR_PT_OFFSET_MASK) >> ARCH_VADDR_PT_OFFSET;
+        paddr_t end                = module->end_paddr;
+        for (paddr_t addr = module->start_paddr; addr < end; addr += PAGE_SIZE, current_pt_offset++) {
+            bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        }
+    }
+
+    current_pt_offset = (phys_start & ARCH_VADDR_PT_OFFSET_MASK) >> ARCH_VADDR_PT_OFFSET;
 
     for (unsigned int addr = phys_start; addr < phys_end; addr += PAGE_SIZE, current_pt_offset++) {
         bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
 
-    paddr_t pd_phys = (paddr_t)((vaddr_t)&boot_page_directory - (vaddr_t)info->kernel_high_vma);
+    info->bootstrap_memory_phys_range.start = phys_start;
+    info->bootstrap_memory_phys_range.end   = phys_end;
 
-    boot_page_directory.entries[0] = ((pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+    paddr_t pd_phys   = (paddr_t)((vaddr_t)&boot_page_directory - (vaddr_t)info->kernel_high_vma);
+    size_t  pd_offset = arch_get_pt_offset(phys_start, ARCH_PD_1);
+
+    boot_page_directory.entries[pd_offset] = ((pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
     arch_load_pagetable(pd_phys);
 }
 
-paddr_t bootstrap_create_page_dir(exec)
+paddr_t bootstrap_create_page_dir(void)
 {
     return bootstrap_fetch_page();
 }
@@ -177,7 +194,7 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
     page_directory_t* pd = (page_directory_t*)info->page_directory;
 
     page_table_t* current_pt = (page_table_t*)arch_get_pt_offset(vaddr, ARCH_PD_0);
-    size_t        pd_offset  = (size_t)-1;
+    size_t        pd_offset  = (size_t)4096;
 
     for (size_t offset = 0; offset < size; offset += ARCH_PAGE_SIZE) {
         size_t vaddr_pd_offset = arch_get_pt_offset(vaddr + offset, ARCH_PD_1);
@@ -186,18 +203,21 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
             pd_offset            = vaddr_pd_offset;
             page_table_t* new_pt = (page_table_t*)(pd->entries[pd_offset] & ARCH_PAGE_MASK);
 
-            if (new_pt) {
-                current_pt = new_pt;
-            } else {
-                new_pt                 = (page_table_t*)bootstrap_fetch_page();
+            if (new_pt == NULL) {
+                new_pt = (page_table_t*)bootstrap_fetch_page();
+                memset((void*)new_pt, 0, ARCH_PAGE_SIZE);
                 pd->entries[pd_offset] = ((paddr_t)new_pt & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
             }
+
+            current_pt = new_pt;
         }
 
         size_t  pt_offset              = arch_get_pt_offset(vaddr + offset, ARCH_PD_0);
         paddr_t frame_addr             = bootstrap_fetch_page();
         current_pt->entries[pt_offset] = ((frame_addr)&PAGE_MASK) | pg_flags;
     }
+
+    arch_flush_tlb();
 
     return 0;
 }
@@ -216,11 +236,9 @@ void kmem_init(kernel_info_t* info)
     paddr_t pd_phys           = (paddr_t)((vaddr_t)&page_directory - (unsigned int)kinfo->kernel_high_vma);
     paddr_t bootstrap_pt_phys = ((paddr_t)&bootstrap_pt) - (paddr_t)kinfo->kernel_high_vma;
 
-    size_t kernel_pd_offset                  = ((vaddr_t)&K_HIGH_VMA & ARCH_VADDR_PD_OFFSET_MASK) >> 22;
+    size_t kernel_pd_offset                  = ((vaddr_t)&K_HIGH_VMA & ARCH_VADDR_PD_OFFSET_MASK) >> ARCH_VADDR_PD_OFFSET;
     page_directory.entries[kernel_pd_offset] = (((vaddr_t)&kernel_pt - (vaddr_t)&K_HIGH_VMA) & PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
     page_directory.entries[0]                = ((pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
-
-    map_kernel_memory();
 
     arch_load_pagetable(pd_phys);
 
@@ -230,7 +248,7 @@ void kmem_init(kernel_info_t* info)
 
 extern unsigned int __early_start, __kernel_start, __kernel_text_end, __kernel_bss_end, __kernel_rodata_end, __kernel_stack_guard_start, __kernel_stack_end, __kernel_end, __kernel_stack_start, __ktable_end;
 
-void map_kernel_memory(void)
+void map_kernel_memory(kernel_info_t* info)
 {
     vaddr_t kernel_start       = (vaddr_t)&__kernel_start;
     vaddr_t ktable_end         = (vaddr_t)&__ktable_end;
@@ -244,7 +262,7 @@ void map_kernel_memory(void)
     size_t size = ktable_end - kernel_start;
 
     // Identity map first MB for now
-    // Clear bootostrap mappings
+    // Clear bootstrap mappings
     memset(&bootstrap_pt.entries[0], 0, sizeof(page_table_t));
     size_t current_pt_offset = 0;
 
@@ -297,20 +315,25 @@ void map_kernel_memory(void)
     curr_addr += size;
 
     // .heap
-    ASSERT(kinfo->memmaps[0].len > CONF_KHEAP_SIZE);
+    ASSERT(info->memmaps[0].len > CONF_KHEAP_SIZE);
 
-    paddr_t heap_start = kinfo->memmaps[0].addr;
-    kinfo->memmaps[0].addr += CONF_KHEAP_SIZE;
-    kinfo->memmaps[0].len -= CONF_KHEAP_SIZE;
+    // TODO: map kheap; special attention to new pt or adjust K_HIGH_VMA so everything fits in one page table
+    /*
+    paddr_t heap_start = info->memmaps[0].addr;
+    info->memmaps[0].addr += CONF_KHEAP_SIZE;
+     info->memmaps[0].len -= CONF_KHEAP_SIZE;
 
     curr_addr_phys = heap_start;
+    curr_addr += ARCH_PAGE_SIZE * 2;
 
-    kinfo->kheap_phys_range.start = heap_start;
-    kinfo->kheap_range.start      = curr_addr;
+    info->kheap_phys_range.start = heap_start;
+    info->kheap_range.start      = curr_addr;
 
-    size = CONF_KHEAP_SIZE;
-    kmap(curr_addr, curr_addr_phys, size, KMAP_PROT_READ | KMAP_PROT_WRITE);
-
+     size = CONF_KHEAP_SIZE;
+     kmap(curr_addr, curr_addr_phys, size, KMAP_PROT_READ | KMAP_PROT_WRITE);
+    */
+    // TODO: move this to the arch layer
     // Map VGA to  0xC03FF000
-    kmap(0xC03FF000, 0x000B8000, ARCH_PAGE_SIZE, KMAP_PROT_READ | KMAP_PROT_WRITE);
+    extern unsigned int __console_debug;
+    kmap((vaddr_t)&__console_debug, 0x000B8000, ARCH_PAGE_SIZE, KMAP_PROT_READ | KMAP_PROT_WRITE);
 }

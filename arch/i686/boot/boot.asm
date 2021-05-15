@@ -1,10 +1,10 @@
 
 extern bootstrap, kstack, early_stack, early_main, boot_kernel_pt, boot_page_directory
-extern __kernel_start, __kernel_end, K_HIGH_VMA
+extern __kernel_start, __kernel_end, K_HIGH_VMA, __console_debug
 
 bits 32
 
-vga_buf_virt equ 	0xC03FF000
+vga_buf_virt equ 	__console_debug
 color equ 0x0f
 
 section .boot.data
@@ -21,7 +21,6 @@ section .boot.pt
 align 4096
 boot_pt:
 	times 1024  dd 0
-
 
 section  .boot.text
 
