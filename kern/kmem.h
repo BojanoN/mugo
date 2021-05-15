@@ -18,3 +18,4 @@ typedef struct exec_info exec_info_t;
 void    bootstrap_identity_map_init_mem(kernel_info_t* info);
 paddr_t bootstrap_create_page_dir(void);
 int     bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags);
+int     bootstrap_mmap_elf(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags);

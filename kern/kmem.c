@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <arch/info.h>
+#include <sys/elf_base.h>
 #include <types/base.h>
 
 #include "assert.h"
@@ -165,6 +166,23 @@ paddr_t bootstrap_create_page_dir(void)
     return bootstrap_fetch_page();
 }
 
+int bootstrap_mmap_elf(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags)
+{
+    unsigned int internal_flags = 0;
+
+    unsigned int exec = flags & PF_X;
+    unsigned int rd   = flags & PF_R;
+    unsigned int wr   = flags & PF_W;
+
+    internal_flags |= KMAP_PROT_EXEC * (exec != 0);
+    internal_flags |= KMAP_PROT_READ * (rd != 0);
+    internal_flags |= KMAP_PROT_WRITE * (wr != 0);
+
+    internal_flags |= KMAP_PROT_USER;
+
+    return bootstrap_mmap(info, paddr, vaddr, size, internal_flags);
+}
+
 int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags)
 {
 
@@ -174,21 +192,16 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
 
     paddr_t pg_flags = 0;
 
-    unsigned int wr = flags & KMAP_PROT_WRITE;
-    unsigned int rd = flags & KMAP_PROT_READ;
+    unsigned int wr  = flags & KMAP_PROT_WRITE;
+    unsigned int rd  = flags & KMAP_PROT_READ;
+    unsigned int usr = flags & KMAP_PROT_USER;
 
     if (!rd && !wr) {
         log(WARN, "No PROT_[READ | WRITE] specified; mapping 0x%08x as PROT_NONE", vaddr);
     } else if (flags != KMAP_PROT_NONE) {
         pg_flags = ARCH_PAGE_PRESENT;
-
-        if (wr) {
-            pg_flags |= ARCH_PAGE_RW;
-        }
-
-        if (flags & KMAP_PROT_USER) {
-            pg_flags |= ARCH_PAGE_ENTRY_USER;
-        }
+        pg_flags |= ARCH_PAGE_RW * (wr != 0);
+        pg_flags |= ARCH_PAGE_ENTRY_USER * (usr != 0);
     }
 
     page_directory_t* pd = (page_directory_t*)info->page_directory;
@@ -213,11 +226,11 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
         }
 
         size_t  pt_offset              = arch_get_pt_offset(vaddr + offset, ARCH_PD_0);
-        paddr_t frame_addr             = bootstrap_fetch_page();
+        paddr_t frame_addr             = current_pt->entries[pt_offset] ? (current_pt->entries[pt_offset] & ARCH_PAGE_MASK) : bootstrap_fetch_page();
         current_pt->entries[pt_offset] = ((frame_addr)&PAGE_MASK) | pg_flags;
     }
 
-    arch_flush_tlb();
+    //arch_flush_tlb();
 
     return 0;
 }

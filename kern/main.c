@@ -43,6 +43,7 @@ void load_boot_modules(void)
 
     memset(&module_ctx, 0, sizeof(elf_ctx_t));
     exec_info_t info = { 0 };
+    info.mmap        = bootstrap_mmap_elf;
 
     paddr_t bootstrap_pt_phys   = (vaddr_t)&bootstrap_pt - (paddr_t)kinfo.kernel_high_vma;
     size_t  bootstrap_pt_offset = arch_get_pt_offset(kinfo.bootstrap_memory_phys_range.start, ARCH_PD_1);
@@ -63,7 +64,6 @@ void load_boot_modules(void)
 
         memset((void*)pd_addr, 0, ARCH_PAGE_SIZE);
         info.page_directory = pd_addr;
-        info.mmap           = bootstrap_mmap;
         proc->page_dir      = pd_addr;
 
         // Create paging structures, map kernel

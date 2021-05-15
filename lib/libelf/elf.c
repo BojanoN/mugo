@@ -109,11 +109,12 @@ int elf_ctx_load(elf_ctx_t* ctx, exec_info_t* info)
             continue;
         }
 
-        // TODO: flags
         // invoke mmap callback function, allocate physical frames and map header
-        info->mmap(info, PAGE_ALLOCATE, phdr->p_vaddr, phdr->p_memsz, 0);
+        info->mmap(info, PAGE_ALLOCATE, phdr->p_vaddr, phdr->p_memsz, phdr->p_flags | PF_W);
         // Copy header contents
         memcpy((void*)phdr->p_vaddr, (uint8_t*)ctx->elf_hdr + phdr->p_offset, phdr->p_filesz);
+        // TODO: add something akin to PAGE_ADJUST_PERMISSIONS flag for paddr field
+        info->mmap(info, 0, phdr->p_vaddr, phdr->p_memsz, phdr->p_flags);
     }
 
     return ELF_OK;
