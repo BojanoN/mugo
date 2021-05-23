@@ -25,6 +25,8 @@ typedef paddr_t arch_pd_entry_t;
 #define ARCH_PAGE_ENTRY_CACHE_DISABLE 0x10
 #define ARCH_PAGE_ENTRY_EXEC          0x0 // not avaialable for x86
 
+#define ARCH_PT_ADDRESSABLE_BYTES (1024 * 4096)
+
 #define ARCH_PD_0 0
 #define ARCH_PD_1 1
 #pragma clang poison ARCH_PD_2 ARCH_PD_3

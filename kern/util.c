@@ -6,7 +6,7 @@
 
 NORETURN void panic(const char* msg)
 {
-    console_clear_screen();
+    //    console_clear_screen();
     kprintf("!!!PANIC!!!\n%s\n", msg);
     arch_panic_hook();
     halt();

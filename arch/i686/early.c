@@ -7,7 +7,7 @@ extern page_table_t     boot_pt;
 extern page_table_t     boot_kernel_pt;
 
 // ldscript symbols
-extern unsigned int __kernel_start, __ktable_start, __kernel_end, K_HIGH_VMA;
+extern unsigned int __kernel_start, __ktable_start, __ktable_end, __kernel_end, K_HIGH_VMA;
 extern unsigned int __early_start, __early_end;
 
 __attribute__((section(".boot.data"))) uint8_t              early_stack[0x1000] = { 0 };
@@ -69,6 +69,9 @@ early_page_map()
     unsigned int early_phys_start = (unsigned int)&__early_start;
     unsigned int early_phys_end   = (unsigned int)&__early_end;
 
+    paddr_t ktable_start_phys = ((paddr_t)&__ktable_start) - (paddr_t)k_vma;
+    paddr_t ktable_end_phys   = ((paddr_t)&__ktable_end) - (paddr_t)k_vma;
+
     // Zero tables
     for (unsigned int i = 0; i < (PAGE_SIZE / 4); i++) {
         *(unsigned int*)((unsigned int)&boot_pt + i) = 0;
@@ -80,7 +83,7 @@ early_page_map()
     // Identity map the first MB
     for (unsigned int i = 0; i < 0x100000; i += PAGE_SIZE, current_pt_offset++) {
         phys_addr                          = i;
-        boot_pt.entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        boot_pt.entries[current_pt_offset] = (phys_addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
 
     // boot code mapping
@@ -88,7 +91,7 @@ early_page_map()
 
     for (unsigned int i = 0; i < ((early_phys_end - early_phys_start) + PAGE_SIZE); i += PAGE_SIZE, current_pt_offset++) {
         phys_addr                          = early_phys_start + i;
-        boot_pt.entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        boot_pt.entries[current_pt_offset] = (phys_addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
 
     // PT offset for kernel mapping
@@ -98,7 +101,25 @@ early_page_map()
     // Map the kernel
     for (unsigned int i = 0; i < ((k_phys_end - k_phys_start)); i += PAGE_SIZE, current_pt_offset++) {
         phys_addr                                  = k_phys_start + i;
-        kernel_pt_phys->entries[current_pt_offset] = (phys_addr & 0xFFFFF000) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        kernel_pt_phys->entries[current_pt_offset] = (phys_addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+    }
+
+    // Identity map frames following kernel frames - these will be used for paging structures
+    phys_addr                          = kinfo.boot_module_phys_range.end;
+    paddr_t paging_structs_mapping_end = phys_addr + ((CONF_KHEAP_SIZE / ARCH_PT_ADDRESSABLE_BYTES) + 1) * PAGE_SIZE;
+    current_pt_offset                  = (phys_addr & ARCH_VADDR_PT_OFFSET_MASK) >> ARCH_VADDR_PT_OFFSET;
+
+    for (unsigned int i = phys_addr; i < paging_structs_mapping_end; i += PAGE_SIZE, current_pt_offset++) {
+        phys_addr                          = i;
+        boot_pt.entries[current_pt_offset] = (phys_addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+    }
+
+    // identity map kernel page tables
+    current_pt_offset = (ktable_start_phys & ARCH_VADDR_PT_OFFSET_MASK) >> ARCH_VADDR_PT_OFFSET;
+
+    for (unsigned int i = ktable_start_phys; i < ktable_end_phys; i += PAGE_SIZE, current_pt_offset++) {
+        phys_addr                          = i;
+        boot_pt.entries[current_pt_offset] = (phys_addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
     }
 
     // Map VGA to
@@ -106,8 +127,8 @@ early_page_map()
     current_pt_offset                          = ((vaddr_t)&__console_debug & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
     kernel_pt_phys->entries[current_pt_offset] = ((0x00B8000 & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW));
 
-    page_directory_phys->entries[0]                = ((arch_pd_entry_t)&boot_pt & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
-    page_directory_phys->entries[kernel_pd_offset] = ((arch_pd_entry_t)kernel_pt_phys & 0xFFFFF000) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+    page_directory_phys->entries[0]                = ((arch_pd_entry_t)&boot_pt & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+    page_directory_phys->entries[kernel_pd_offset] = ((arch_pd_entry_t)kernel_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 }
 
 __attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t multiboot_magic, paddr_t multiboot_img_ptr)
@@ -137,6 +158,7 @@ __attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t mult
     int module_index     = 0;
 
     /* Module copying metadata */
+    paddr_t modules_start        = kinfo.kernel_phys_range.end;
     paddr_t last_module_end_addr = kinfo.kernel_phys_range.end;
     size_t  total_module_size    = 0;
 
@@ -233,6 +255,9 @@ __attribute__((section(".boot.text"), optnone)) paddr_t early_main(uint32_t mult
     if (!kinfo.no_modules) {
         early_panic("No modules loaded!");
     }
+
+    kinfo.boot_module_phys_range.start = modules_start;
+    kinfo.boot_module_phys_range.end   = last_module_end_addr;
 
     // TODO: check if sufficient memory is available
 

@@ -30,9 +30,9 @@ typedef struct bag {
 
 #define OBJS_PER_PAGE(obj_type) ((ARCH_PAGE_SIZE - sizeof(page_hdr_t)) / sizeof(obj_type))
 
-static vaddr_t pool_start      = 0;
-static vaddr_t pool_end        = 0;
-static paddr_t pool_start_phys = 0;
+static vaddr_t pool_start = 0;
+static vaddr_t pool_end   = 0;
+//static paddr_t pool_start_phys = 0;
 
 static vaddr_t page_freelist_head = PAGE_FREELIST_SENTINEL;
 
@@ -139,13 +139,13 @@ static inline void* fetch_object(size_t idx)
     return ret;
 }
 
-void kmalloc_init(uint8_t* pool_vaddr, uint8_t* pool_phys, size_t size)
+void kmalloc_init(uint8_t* pool_vaddr, size_t size)
 {
     ASSERT_MSG(((vaddr_t)pool_vaddr & ~PAGE_MASK) == 0, "Pool start not page-aligned");
 
-    pool_start      = (vaddr_t)pool_vaddr;
-    pool_end        = (vaddr_t)(pool_vaddr + size);
-    pool_start_phys = (paddr_t)pool_phys;
+    pool_start = (vaddr_t)pool_vaddr;
+    pool_end   = (vaddr_t)(pool_vaddr + size);
+    //    pool_start_phys = (paddr_t)pool_phys;
 
     for (vaddr_t addr = pool_start; addr < pool_end; addr += PAGE_SIZE) {
         *((vaddr_t*)addr) = addr + PAGE_SIZE;
@@ -156,7 +156,7 @@ void kmalloc_init(uint8_t* pool_vaddr, uint8_t* pool_phys, size_t size)
     page_freelist_head = pool_start;
 }
 
-inline static void* kmalloc_priv(size_t size, void* phys_addr)
+inline static void* kmalloc_priv(size_t size)
 {
     if (size < MIN_BLOCK_SIZE || size > (1 << NO_CLASSES)) {
         return NULL;
@@ -175,7 +175,7 @@ inline static void* kmalloc_priv(size_t size, void* phys_addr)
     return ret;
 }
 
-void* kmalloc(size_t size) { return kmalloc_priv((size), NULL); }
+void* kmalloc(size_t size) { return kmalloc_priv((size)); }
 
 void kfree(void* ptr)
 {

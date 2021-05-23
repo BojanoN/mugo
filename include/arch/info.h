@@ -29,6 +29,7 @@ typedef struct {
     size_t             no_modules;
 
     phys_mem_range_t kernel_phys_range;
+    phys_mem_range_t boot_module_phys_range;
     phys_mem_range_t kheap_phys_range;
     phys_mem_range_t bootstrap_memory_phys_range;
 

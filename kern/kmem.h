@@ -11,7 +11,9 @@
 
 void map_kernel_memory(kernel_info_t* info);
 void page_fault_handler(irq_context_t registers);
+
 void kmem_init(kernel_info_t* info);
+void kmem_init_cleanup(void);
 
 typedef struct exec_info exec_info_t;
 

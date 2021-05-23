@@ -31,11 +31,10 @@ static proc_t boot_processes[CONF_MAX_BOOT_MODULES] = { 0 };
 
 void load_boot_modules(void)
 {
-    size_t              no_modules = kinfo.no_modules;
-    elf_ctx_t           module_ctx;
-    int                 err;
-    extern page_table_t kernel_pt;
-    extern page_table_t bootstrap_pt;
+    size_t                  no_modules = kinfo.no_modules;
+    elf_ctx_t               module_ctx;
+    int                     err;
+    extern page_directory_t boot_page_directory;
 
     // identity map the necessary memory range for easier initialization
 
@@ -44,11 +43,6 @@ void load_boot_modules(void)
     memset(&module_ctx, 0, sizeof(elf_ctx_t));
     exec_info_t info = { 0 };
     info.mmap        = bootstrap_mmap_elf;
-
-    paddr_t bootstrap_pt_phys   = (vaddr_t)&bootstrap_pt - (paddr_t)kinfo.kernel_high_vma;
-    size_t  bootstrap_pt_offset = arch_get_pt_offset(kinfo.bootstrap_memory_phys_range.start, ARCH_PD_1);
-    size_t  kernel_pt_offset    = arch_get_pt_offset(kinfo.kernel_phys_range.start + kinfo.kernel_high_vma, ARCH_PD_1);
-    paddr_t kernel_pt_phys      = (((vaddr_t)&kernel_pt - (vaddr_t)kinfo.kernel_high_vma) & PAGE_MASK);
 
     for (size_t i = 0; i < no_modules; i++) {
 
@@ -67,9 +61,8 @@ void load_boot_modules(void)
         proc->page_dir      = pd_addr;
 
         // Create paging structures, map kernel
-        page_directory_t* module_pd             = (page_directory_t*)pd_addr;
-        module_pd->entries[kernel_pt_offset]    = kernel_pt_phys | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
-        module_pd->entries[bootstrap_pt_offset] = bootstrap_pt_phys | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+        page_directory_t* module_pd = (page_directory_t*)pd_addr;
+        memcpy((void*)module_pd, (void*)&boot_page_directory, sizeof(page_directory_t));
 
         arch_load_pagetable(pd_addr);
 
@@ -101,13 +94,14 @@ void bootstrap(kernel_info_t* info)
     log(INFO, "Bootstrap started");
 
     log(INFO, "Initializing kernel memory");
-    map_kernel_memory(&kinfo);
-
-    bootstrap_identity_map_init_mem(&kinfo);
-
-    load_boot_modules();
 
     kmem_init(&kinfo);
+
+    // TODO: map kheap before bootstrapping modules
+    bootstrap_identity_map_init_mem(&kinfo);
+    load_boot_modules();
+
+    kmem_init_cleanup();
 
     arch_init();
 
