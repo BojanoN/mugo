@@ -31,7 +31,7 @@ typedef paddr_t arch_pd_entry_t;
 #define ARCH_PD_1 1
 #pragma clang poison ARCH_PD_2 ARCH_PD_3
 
-static inline void arch_load_pagetable(paddr_t pd_phys_addr)
+static inline void arch_load_pagedir(paddr_t pd_phys_addr)
 {
     native_cr3_write(pd_phys_addr);
 }

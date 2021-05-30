@@ -63,7 +63,9 @@ irq_common:
   ;;      mov esp, kstack_top
 	   pusha
 
-	   
+   	 mov ax, ds
+	   push eax
+
 	   mov ax, 0x10
 	   mov ds, ax
 	   mov es, ax
@@ -72,17 +74,16 @@ irq_common:
 
   	 call interrupt_handler
 
-     
 arch_return_to_user:
 
 
-	   mov ax, 0x23
+     mov esp, dword [arch_current_thread_execution_ctx]
+
+	   pop eax
 	   mov ds, ax
 	   mov es, ax
 	   mov fs, ax
 	   mov gs, ax
-
-     mov esp, dword [arch_current_thread_execution_ctx]
 
 	   popa
      add esp, 4

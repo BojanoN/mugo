@@ -78,9 +78,10 @@ SECTIONS {
   . = ALIGN(4K);
   __kernel_stack_end = .;
 
-  __kernel_end = .;
-
   __console_debug = .;
   . += 4K;
+
+  __kernel_end = .;
+
 
 }

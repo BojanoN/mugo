@@ -45,13 +45,14 @@ void exception_handler(irq_context_t context)
 
     uint32_t interrupt_num = context.int_no;
 
-    PIC_sendEOI(interrupt_num);
-
     if (interrupt_num < NO_INTERRUPTS && callback[interrupt_num]) {
         callback[interrupt_num](context);
     }
 
     kprintf("Received exception no. %d: %s \n", interrupt_num, exception_string[interrupt_num]);
+
+    PIC_sendEOI(interrupt_num);
+
     return;
 }
 

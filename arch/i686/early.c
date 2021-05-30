@@ -106,7 +106,7 @@ early_page_map()
 
     // Identity map frames following kernel frames - these will be used for paging structures
     phys_addr                          = kinfo.boot_module_phys_range.end;
-    paddr_t paging_structs_mapping_end = phys_addr + ((CONF_KHEAP_SIZE / ARCH_PT_ADDRESSABLE_BYTES) + 1) * PAGE_SIZE;
+    paddr_t paging_structs_mapping_end = phys_addr + ((CONF_KHEAP_SIZE / ARCH_PT_ADDRESSABLE_BYTES) + 2) * PAGE_SIZE;
     current_pt_offset                  = (phys_addr & ARCH_VADDR_PT_OFFSET_MASK) >> ARCH_VADDR_PT_OFFSET;
 
     for (unsigned int i = phys_addr; i < paging_structs_mapping_end; i += PAGE_SIZE, current_pt_offset++) {

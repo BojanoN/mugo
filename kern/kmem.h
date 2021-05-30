@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arch/info.h>
 #include <arch/interrupt.h>
 #include <types/base.h>
 

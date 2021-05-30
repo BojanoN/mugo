@@ -7,8 +7,8 @@
 
 #define SEC_NSEC 1000000000
 
-typedef size_t time_t;
-typedef size_t clockid_t;
+typedef uint64_t time_t;
+typedef size_t   clockid_t;
 
 typedef struct timespec {
     time_t tv_sec;

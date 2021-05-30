@@ -1,14 +1,17 @@
 
   bits 32
 
-  global native_sysexit_to_user, native_iret_to_user
+  global native_sysexit_to_user, native_load_thread_ctx
+
+
+
 
 native_iret_to_user:
  	push    ebp
 	mov     ebp, esp
 
   ;; Entrypoint EIP
-	mov     ecx, [ebp+8]
+  ;; 	mov     ecx, [ebp+8]
 
 	mov ax, (4 * 8) | 3 ; ring 3 data with bottom 2 bits set for ring 3
 	mov ds, ax

@@ -37,6 +37,8 @@ set(kernel_sources
   ./kern/panic.c
   ./kern/kmem.c
   ./kern/kprint.c
+  ./kern/sched.c
+  ./kern/sched_rr.c
   )
 list(TRANSFORM kernel_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 

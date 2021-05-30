@@ -30,6 +30,7 @@ static kernel_info_t* kinfo;
 
 static exec_info_t k_exec_info = {
     (paddr_t)&page_directory,
+    0,
     NULL
 };
 
@@ -151,7 +152,7 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
 
     boot_page_directory.entries[pd_offset] = ((pd_entry_t)module_bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 
-    arch_load_pagetable(pd_phys);
+    arch_load_pagedir(pd_phys);
 }
 
 paddr_t bootstrap_create_page_dir(void)
@@ -200,7 +201,7 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
     page_directory_t* pd = (page_directory_t*)info->page_directory;
 
     // Preallocate all necessary page tables
-    page_table_t* current_pt = (page_table_t*)arch_get_pt_offset(vaddr, ARCH_PD_0);
+    page_table_t* current_pt = (page_table_t*)(pd->entries[arch_get_pt_offset(vaddr, ARCH_PD_1)] & ARCH_PAGE_MASK);
 
     size_t current_pt_overflow = ((arch_get_pt_offset(vaddr, ARCH_PD_0) + (size / ARCH_PAGE_SIZE)) > 1024) ? 1 : 0;
     size_t no_page_tables      = (size / ARCH_PT_ADDRESSABLE_BYTES) + current_pt_overflow + (current_pt == NULL ? 1 : 0);
@@ -214,7 +215,7 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
             }
             memset((void*)pt, 0, ARCH_PAGE_SIZE);
 
-            pd->entries[pd_offset + i] = (pt & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+            pd->entries[pd_offset + i] = (pt & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW | (info != &k_exec_info ? ARCH_PD_ENTRY_USER : 0));
         }
     }
 
@@ -258,7 +259,7 @@ void kmem_init(kernel_info_t* info)
 
     paddr_t pd_phys = (paddr_t)((vaddr_t)&page_directory - (unsigned int)kinfo->kernel_high_vma);
 
-    arch_load_pagetable(pd_phys);
+    arch_load_pagedir(pd_phys);
 
     // Map kheap
 
@@ -269,7 +270,7 @@ void kmem_init(kernel_info_t* info)
 void kmem_init_cleanup(void)
 {
     paddr_t pd_phys = (paddr_t)((vaddr_t)&boot_page_directory - (vaddr_t)kinfo->kernel_high_vma);
-    arch_load_pagetable(pd_phys);
+    arch_load_pagedir(pd_phys);
 }
 
 extern unsigned int __early_start, __kernel_start, __kernel_text_end, __kernel_bss_end, __kernel_rodata_end, __kernel_stack_guard_start, __kernel_stack_end, __kernel_stack_start, __ktable_end;
@@ -355,14 +356,13 @@ void map_kernel_memory(kernel_info_t* info)
     curr_addr_phys += size;
     curr_addr += size;
 
+    extern unsigned int __console_debug;
+    kmap((vaddr_t)&__console_debug, 0x000B8000, ARCH_PAGE_SIZE, KMAP_PROT_READ | KMAP_PROT_WRITE);
+    curr_addr += ARCH_PAGE_SIZE;
+
     ASSERT(info->memmaps[0].len > CONF_KHEAP_SIZE);
     vaddr_t kheap_start = curr_addr;
     kmap(kheap_start, PAGE_ALLOCATE, CONF_KHEAP_SIZE, KMAP_PROT_READ | KMAP_PROT_WRITE);
 
     info->kheap_range.start = kheap_start;
-
-    // TODO: move this to the arch layer
-    // Map VGA to  0xC03FF000
-    extern unsigned int __console_debug;
-    kmap((vaddr_t)&__console_debug, 0x000B8000, ARCH_PAGE_SIZE, KMAP_PROT_READ | KMAP_PROT_WRITE);
 }

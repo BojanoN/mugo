@@ -23,11 +23,11 @@ static inline time_t sched_tick_nsec(void)
 }
 
 typedef struct sched_policy {
-    void (*init)(tcb_t*);
+    void (*init)(proc_t*, size_t);
     void (*interrupt_handler)(void);
     void (*schedule)(void);
     void (*idle)(void);
     tcb_t* (*current_thread)(void);
 } sched_policy_t;
 
-void sched_init(sched_policy_t* sched, tcb_t* initial_task);
+void sched_init(sched_policy_t* sched, proc_t* initial_tasks, size_t no_tasks);

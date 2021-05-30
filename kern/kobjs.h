@@ -46,19 +46,14 @@ typedef struct tcb {
     tcb_sched_ctx_t sched_ctx;
     tcb_exec_ctx_t  exec_ctx;
 
+    /* Each thread uses a per-CPU kernel stack  */
     vaddr_t utcb_ptr;
-
-    // Stack allocation/mapping is handled by the mman
-    vaddr_t k_stack_base;
-    size_t  k_stack_size;
 
     lst_hdr_t list;
 } tcb_t;
 
 typedef struct proc {
     pid_t id;
-
-    vaddr_t stack_base;
 
     paddr_t page_dir;
 

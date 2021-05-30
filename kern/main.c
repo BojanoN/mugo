@@ -20,29 +20,28 @@
 #include "sched.h"
 #include "time.h"
 
-extern sched_policy_t sched_rr;
-kernel_info_t         kinfo;
-//static tcb_t          init_tcb;
+static kernel_info_t kinfo;
 
 void arch_init(void);
 void arch_return_to_user(void);
 
-static proc_t boot_processes[CONF_MAX_BOOT_MODULES] = { 0 };
+static proc_t boot_processes[CONF_MAX_BOOT_MODULES]         = { 0 };
+static tcb_t  boot_processes_threads[CONF_MAX_BOOT_MODULES] = { 0 };
 
 void load_boot_modules(void)
 {
     size_t                  no_modules = kinfo.no_modules;
     elf_ctx_t               module_ctx;
+    exec_info_t             info = { 0 };
     int                     err;
+    pid_t                   pid = 1;
     extern page_directory_t boot_page_directory;
 
     // identity map the necessary memory range for easier initialization
 
     ASSERT_MSG(no_modules < CONF_MAX_BOOT_MODULES, "Too much boot modules loaded");
 
-    memset(&module_ctx, 0, sizeof(elf_ctx_t));
-    exec_info_t info = { 0 };
-    info.mmap        = bootstrap_mmap_elf;
+    info.mmap = bootstrap_mmap_elf;
 
     for (size_t i = 0; i < no_modules; i++) {
 
@@ -50,21 +49,23 @@ void load_boot_modules(void)
         vaddr_t             module_start = module->start_paddr;
         size_t              module_size  = module->end_paddr - module->start_paddr;
         proc_t*             proc         = &boot_processes[i];
+        tcb_t*              thread       = &boot_processes_threads[i];
 
         paddr_t pd_addr = bootstrap_create_page_dir();
         if (pd_addr == 0) {
             panic("Unable to create page directory for module");
         }
 
+        memset(&module_ctx, 0, sizeof(elf_ctx_t));
+
         memset((void*)pd_addr, 0, ARCH_PAGE_SIZE);
         info.page_directory = pd_addr;
-        proc->page_dir      = pd_addr;
 
         // Create paging structures, map kernel
         page_directory_t* module_pd = (page_directory_t*)pd_addr;
         memcpy((void*)module_pd, (void*)&boot_page_directory, sizeof(page_directory_t));
 
-        arch_load_pagetable(pd_addr);
+        arch_load_pagedir(pd_addr);
 
         log(INFO, "Loading module %s...", module->name);
 
@@ -78,8 +79,20 @@ void load_boot_modules(void)
             panic("Unable to load boot modules!");
         }
 
-        // TODO: assign one page stack
-        proc->stack_base = CONF_PROCESS_STACK_BASE;
+        proc->page_dir     = pd_addr;
+        proc->priority     = 0;
+        proc->id           = pid++;
+        proc->threads      = thread;
+        proc->thread_count = 1;
+
+        thread->proc               = proc;
+        thread->sched_ctx.priority = 0;
+        thread->id                 = 0;
+
+        extern vaddr_t kstack_top;
+
+        // TODO: SMP overhaul point
+        native_create_thread(thread, (vaddr_t)module_ctx.elf_hdr->e_entry, (vaddr_t)info.main_thread_stack_top, (vaddr_t)kstack_top);
     }
 }
 
@@ -92,9 +105,7 @@ void bootstrap(kernel_info_t* info)
     console_init();
 
     log(INFO, "Bootstrap started");
-
     log(INFO, "Initializing kernel memory");
-
     kmem_init(&kinfo);
 
     // TODO: map kheap before bootstrapping modules
@@ -105,15 +116,11 @@ void bootstrap(kernel_info_t* info)
 
     arch_init();
 
-    //   memset(&init_tcb, 0, sizeof(tcb_t));
+    extern sched_policy_t sched_rr;
 
-    //    init_tcb.id = 0;
+    sched_init(&sched_rr, boot_processes, kinfo.no_modules);
 
-    //native_create_thread(&init_tcb, (vaddr_t)test_func, (vaddr_t)test_stack, 0x1000, (vaddr_t)test_kstack, 0x1000);
+    ktime_init(sched_rr.interrupt_handler);
 
-    // sched_init(&sched_rr, &init_tcb);
-
-    //ktime_init(sched_rr.interrupt_handler);
-
-    //arch_return_to_user();
+    arch_return_to_user();
 }

@@ -13,6 +13,8 @@ typedef struct {
 } arch_regs;
 
 typedef struct {
+
+    uint32_t     ds;
     arch_gp_regs gp_regs_state;
     uint32_t     err;
 
@@ -21,6 +23,7 @@ typedef struct {
     reg_t eflags;
     reg_t esp;
     reg_t ss;
+
 } arch_thread_context_t;
 
 // clang-format off

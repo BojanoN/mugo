@@ -12,7 +12,7 @@
 #define READY_QUEUE_LEN 16
 
 static void   rr_tick_handler(void);
-static void   rr_init(tcb_t*);
+static void   rr_init(proc_t*, size_t);
 static void   rr_schedule(void);
 static void   rr_idle(void);
 static tcb_t* rr_current_thread(void);
@@ -31,17 +31,18 @@ static tcb_t ready_queue[READY_QUEUE_LEN] = { 0 };
 static tcb_t*           current_thread    = NULL;
 static tcb_sched_ctx_t* current_sched_ctx = NULL;
 
-static time_t nsec_to_next_tick = 0;
+static long nsec_to_next_tick = 0;
 
 static inline void rr_move_to_ready(tcb_t* tcb)
 {
     list_add(&tcb->list, ready_queue[tcb->sched_ctx.priority].list.prev);
+    tcb->sched_ctx.state = THREAD_READY;
 }
 
 static inline time_t rr_quant_from_prio(size_t priority)
 {
     // TODO
-    return 10;
+    return (time_t)10 * SEC_NSEC;
 }
 
 static inline tcb_t* rr_get_next_ready(void)
@@ -58,6 +59,14 @@ static inline tcb_t* rr_get_next_ready(void)
     return ret;
 }
 
+static void rr_enqueue(tcb_t* thread)
+{
+    size_t priority                = thread->sched_ctx.priority;
+    thread->sched_ctx.quantum_nsec = rr_quant_from_prio(priority);
+
+    rr_move_to_ready(thread);
+}
+
 static void rr_tick_handler(void)
 {
 
@@ -72,7 +81,7 @@ static void rr_tick_handler(void)
     // return_to_current()
 }
 
-static void rr_init(tcb_t* root_task)
+static void rr_init(proc_t* root_tasks, size_t no_tasks)
 {
     log(INFO, "Initializing RR scheduler");
 
@@ -80,7 +89,11 @@ static void rr_init(tcb_t* root_task)
         LIST_HEAD_INIT(&ready_queue[i].list);
     }
 
-    current_thread = root_task;
+    for (size_t i = 0; i < no_tasks; i++) {
+        rr_enqueue(root_tasks[i].threads);
+    }
+
+    current_thread = rr_get_next_ready();
     native_select_thread(current_thread);
 }
 

@@ -46,8 +46,10 @@ void init_gdt(void)
     // TSS entry
     fill_gdt_entry(5, (uint32_t)&tss, sizeof(struct tss), 0x89, 0xC0);
 
+    extern vaddr_t kstack_top;
+
     tss.ss0 = 0x10;
-    tss.sp0 = 0; //(uint32_t)kstack + 0x4000;
+    tss.sp0 = (uint32_t)kstack_top;
     tss.cs  = 0x0b;
     tss.ss = tss.ds = tss.es = tss.fs = tss.gs = 0x13;
 
