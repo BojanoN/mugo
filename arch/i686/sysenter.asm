@@ -1,23 +1,19 @@
-  global arch_kcall_entry
+  global arch_syscall_entry
   extern kcall_handler
   bits 32
 
-caller_esp:
+ret_esp:
   dd 0
-caller_eip:
+ret_eip:
   dd 0
 
-arch_kcall_entry:
-
-  push caller_esp
-  push caller_eip
+arch_syscall_entry:
 
   call kcall_handler
 
   ;; set EIP and ESP, can differ from the original
-  mov ecx, [dword caller_esp] 
-  mov edx, [dword caller_eip]
-
+  mov ecx, [dword ret_esp]
+  mov edx, [dword ret_eip]
 
   sysexit
 

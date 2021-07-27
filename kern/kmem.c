@@ -44,44 +44,6 @@ mmap(vaddr_t vaddr, paddr_t paddr, vaddr_t page_table_ptr, unsigned int flags)
     return 0;
 }
 
-/*
-static vaddr_t kmap(vaddr_t vaddr, paddr_t paddr, size_t size, unsigned int flags)
-{
-    ASSERT_MSG((vaddr >= (vaddr_t)&K_HIGH_VMA), "Attempted to page below K_HIGH_VMA");
-
-    ASSERT(vaddr % ARCH_PAGE_SIZE == 0);
-    ASSERT(paddr % ARCH_PAGE_SIZE == 0);
-    ASSERT(size % ARCH_PAGE_SIZE == 0);
-
-    paddr_t pg_flags = 0;
-
-    unsigned int wr  = flags & KMAP_PROT_WRITE;
-    unsigned int rd  = flags & KMAP_PROT_READ;
-    unsigned int usr = flags & KMAP_PROT_USER;
-
-    if (!rd && !wr) {
-        log(WARN, "No PROT_[READ | WRITE] specified; mapping 0x%08x as PROT_NONE", vaddr);
-    } else if (flags != KMAP_PROT_NONE) {
-        pg_flags = ARCH_PAGE_PRESENT;
-        pg_flags |= ARCH_PAGE_RW * (wr != 0);
-        pg_flags |= ARCH_PAGE_ENTRY_USER * (usr != 0);
-    }
-
-    for (size_t offset = 0; offset < size; offset += ARCH_PAGE_SIZE) {
-
-        size_t  pt_offset  = ((vaddr + offset) & ARCH_VADDR_PT_OFFSET_MASK) >> 12;
-        paddr_t phys_frame = paddr == PG_ALLOCATE ? bootstrap_fetch_page() : paddr + offset;
-        if (phys_frame == 0) {
-            panic("Out of free frames!");
-        }
-
-        kernel_pt.entries[pt_offset] = ((phys_frame)&PAGE_MASK) | pg_flags;
-    }
-
-    return 0;
-}
-*/
-
 void page_fault_handler(irq_context_t registers)
 {
     vaddr_t faulting_address = arch_get_faulting_addr();

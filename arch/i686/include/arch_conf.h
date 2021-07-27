@@ -1,3 +1,4 @@
 #pragma once
 
 #define CONF_PROCESS_STACK_BASE 0
+#define CONF_SYSENTER_STUB_RET_VADDR 1234

@@ -116,6 +116,7 @@ void bootstrap(kernel_info_t* info)
 
     arch_init();
 
+    // TODO: Hardcoded for now, need to think of a better solution
     extern sched_policy_t sched_rr;
 
     sched_init(&sched_rr, boot_processes, kinfo.no_modules);

@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.15.0)
 
 
 project(Mugo C)
+cmake_policy(SET CMP0115 OLD)
 
 #include(Macros.cmake)
 
@@ -27,6 +28,19 @@ target_include_directories(${OUTPUT_FILE} PUBLIC
 add_subdirectory(./arch/${TARGET_ARCH})
 add_subdirectory(./serv/mman)
 
+foreach(ASM_SRC ${asm_preprocess_sources})
+  string(REPLACE ".S" "" ASM_FILE ${ASM_SRC})
+  message(STATUS ${ASM_FILE})
+  add_custom_command(
+    OUTPUT  ${ASM_FILE}
+    COMMAND "${CMAKE_C_COMPILER}" -E ${ASM_SRC} -o ${ASM_FILE}
+    MAIN_DEPENDENCY ${ASM_SRC}
+    COMMENT "Preprocessing ${ASM_SRC}"
+    VERBATIM
+    )
+endforeach()
+
+
 set(kernel_sources
   ./kern/kmalloc.c
   ./kern/main.c
@@ -39,6 +53,7 @@ set(kernel_sources
   ./kern/kprint.c
   ./kern/sched.c
   ./kern/sched_rr.c
+  ./kern/kcall.c
   )
 list(TRANSFORM kernel_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 

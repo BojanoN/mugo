@@ -3,7 +3,7 @@
 #include <types/base.h>
 
 typedef struct {
-    reg_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    reg_t edi, esi, ebp, esp, edx, ecx, ebx, eax;
 } arch_gp_regs;
 
 typedef struct {

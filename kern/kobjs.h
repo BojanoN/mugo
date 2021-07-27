@@ -9,7 +9,8 @@
  * Definitions of all kernel objects
  */
 
-#define NR_TOKENS_PER_THREAD 4
+#define NR_TOKENS_PER_THREAD  4
+#define MAX_NO_SYSCALL_PARAMS 8
 
 typedef size_t pid_t;
 typedef size_t tid_t;
@@ -19,9 +20,14 @@ typedef struct token {
 
 } token_t;
 
-// Resides in userspace at a fixed address space per process
+// Resides in userspace at a fixed address per process
 typedef struct utcb {
 
+    size_t syscall_num;
+    word_t syscall_params[MAX_NO_SYSCALL_PARAMS];
+
+    errno_t errno;
+    word_t  retval;
 } utcb_t;
 
 typedef struct tcb_exec_ctx {
@@ -46,7 +52,6 @@ typedef struct tcb {
     tcb_sched_ctx_t sched_ctx;
     tcb_exec_ctx_t  exec_ctx;
 
-    /* Each thread uses a per-CPU kernel stack  */
     vaddr_t utcb_ptr;
 
     lst_hdr_t list;

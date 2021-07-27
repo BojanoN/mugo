@@ -1,3 +1,5 @@
 #pragma once
 
-void kcall_entry(void);
+typedef int (*syscall_t)(void*);
+
+void syscall_entry(void);

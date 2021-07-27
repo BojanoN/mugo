@@ -1,7 +1,7 @@
 #include "sched.h"
 #include "assert.h"
 
-sched_policy_t current_scheduler = { 0 };
+sched_policy_t scheduler = { 0 };
 
 void sched_init(sched_policy_t* sched, proc_t* initial_tasks, size_t no_tasks)
 {
@@ -12,7 +12,7 @@ void sched_init(sched_policy_t* sched, proc_t* initial_tasks, size_t no_tasks)
     ASSERT(sched->idle != NULL);
     ASSERT(sched->current_thread != NULL);
 
-    current_scheduler = *sched;
+    scheduler = *sched;
 
-    current_scheduler.init(initial_tasks, no_tasks);
+    scheduler.init(initial_tasks, no_tasks);
 }

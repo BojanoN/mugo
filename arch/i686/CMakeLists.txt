@@ -14,6 +14,18 @@ set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <FLAGS> -f ${CMAKE_
 target_include_directories(${OUTPUT_FILE} PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_options(${OUTPUT_FILE} PUBLIC --prefix ${TOOLCHAIN_DIR} -T ${CMAKE_CURRENT_SOURCE_DIR}/link.ld  -fuse-ld=lld -v)
 
+set(asm_preprocess_sources_local
+    kcall.asm.S
+    )
+list(TRANSFORM asm_preprocess_sources_local PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
+
+set(asm_preprocess_sources
+  ${asm_preprocess_sources_local}
+  PARENT_SCOPE
+  )
+
+
+
 set(c_sources
   panic.c
   interrupt.c
@@ -31,7 +43,7 @@ set(c_sources
 list(TRANSFORM sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 set(asm_sources
-  sysenter.asm
+  kcall.asm
   boot/multiboot.asm
   boot/load_tables.asm
   boot/boot.asm

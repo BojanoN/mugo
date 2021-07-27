@@ -20,6 +20,7 @@
             halt();           \
         }                     \
     while (0)
+
 #else
 
 #define ASSERT(expr)
