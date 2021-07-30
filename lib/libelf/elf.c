@@ -89,6 +89,9 @@ int elf_ctx_load(elf_ctx_t* ctx, exec_info_t* info)
 
     size_t no_pheaders = ctx->elf_hdr->e_phnum;
 
+    //
+    info->on_load();
+
     for (size_t i = 0; i < no_pheaders; i++) {
         Elf_Phdr* phdr = &ctx->program_headers[i];
 
@@ -118,6 +121,7 @@ int elf_ctx_load(elf_ctx_t* ctx, exec_info_t* info)
         info->mmap(info, 0, phdr->p_vaddr, phdr->p_memsz, phdr->p_flags);
     }
 
+    // Map the stack
     info->mmap(info, PAGE_ALLOCATE, (vaddr_t)(ARCH_MAIN_THREAD_STACK_ADDR - ARCH_MAIN_THREAD_STACK_SIZE), (size_t)(ARCH_MAIN_THREAD_STACK_SIZE + ARCH_PAGE_SIZE), PF_W | PF_R);
 
     info->main_thread_stack_top = ARCH_MAIN_THREAD_STACK_ADDR;

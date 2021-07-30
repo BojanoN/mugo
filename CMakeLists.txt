@@ -62,6 +62,7 @@ set(lib_sources
   ./lib/stdlib/stdlib.c
   ./lib/libelf/elf.c
   ./lib/crt/crt.c
+  ./lib/sys/syscall.c
   )
 
 list(TRANSFORM lib_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)

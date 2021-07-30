@@ -31,6 +31,7 @@ static kernel_info_t* kinfo;
 static exec_info_t k_exec_info = {
     (paddr_t)&page_directory,
     0,
+    NULL,
     NULL
 };
 
@@ -90,7 +91,7 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
         size_t              module_size = module->end_paddr - module->start_paddr;
 
         /* Each module needs a page directory along with at least two page tables, and another page for the stack */
-        phys_end += ARCH_PAGE_SIZE * 4;
+        phys_end += ARCH_PAGE_SIZE * 8;
 
         phys_end += (module_size & ARCH_PAGE_MASK) + ARCH_PAGE_SIZE;
     }

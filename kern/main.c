@@ -38,7 +38,6 @@ void load_boot_modules(void)
     extern page_directory_t boot_page_directory;
 
     // identity map the necessary memory range for easier initialization
-
     ASSERT_MSG(no_modules < CONF_MAX_BOOT_MODULES, "Too much boot modules loaded");
 
     info.mmap = bootstrap_mmap_elf;

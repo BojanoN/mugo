@@ -24,8 +24,6 @@ set(asm_preprocess_sources
   PARENT_SCOPE
   )
 
-
-
 set(c_sources
   panic.c
   interrupt.c
