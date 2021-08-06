@@ -2,6 +2,7 @@
 
 #include "conf.h"
 #include "kobjs.h"
+#include <arch/interrupt.h>
 #include <types/base.h>
 #include <types/time.h>
 
@@ -24,7 +25,7 @@ static inline time_t sched_tick_nsec(void)
 
 typedef struct sched_policy {
     void (*init)(proc_t*, size_t);
-    void (*interrupt_handler)(void);
+    void (*interrupt_handler)(irq_context_t*);
     void (*schedule)(void);
     void (*idle)(void);
     tcb_t* (*current_thread)(void);

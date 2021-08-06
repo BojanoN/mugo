@@ -1,5 +1,7 @@
 #pragma once
 
+#include <meminfo.h>
 #include <types/base.h>
 
-int syscall(size_t number, ...);
+int kcall_debug(const char* string);
+int kcall_meminfo(struct sys_meminfo* meminfo);

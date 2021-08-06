@@ -2,7 +2,7 @@
 
 #include "kobjs.h"
 #define NO_KCALLS         1
-#define NO_KCALL_ARGS_MAX 5
+#define NO_KCALL_ARGS_MAX 4
 
 typedef struct {
     size_t kcall_number;

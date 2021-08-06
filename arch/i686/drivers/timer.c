@@ -21,7 +21,7 @@ static void hwclock_init(uint32_t frequency);
 static void hwclock_get_time(timespec_t* tv);
 static void hwclock_set_time(timespec_t* tv);
 
-//static hwclock_stats_t    timer_stats      = { 0 };
+// static hwclock_stats_t    timer_stats      = { 0 };
 static hwclock_callback_t current_callback = NULL;
 
 static size_t current_freq_hz = 0;
@@ -36,10 +36,6 @@ hwclock_t hwclock = {
     hwclock_set_time,
 };
 
-//static void hwclock_set_tick_duration(time_t t_nsec)
-//{
-//}
-
 static time_t hwclock_get_tick_remaining(void)
 {
     uint8_t low, hi;
@@ -50,16 +46,6 @@ static time_t hwclock_get_tick_remaining(void)
 
     return (low | (hi << 8)) * PIT_NSEC_PER_TICK;
 }
-/*
-static void hwclock_stub_callback(void)
-{
-    timer_stats.total_ticks++;
-    kprintf("Total ticks: %d\n", timer_stats.total_ticks);
-    timespec_t clock;
-
-    hwclock_get_time(&clock);
-    kprintf("Current clock: %d, %d\n", clock.tv_sec, clock.tv_nsec);
-}*/
 
 static void hwclock_irq_handler(irq_context_t ctx)
 {
@@ -72,7 +58,7 @@ static void hwclock_irq_handler(irq_context_t ctx)
 
     current_clock.tv_nsec = tmp_nsec;
 
-    current_callback();
+    current_callback(&ctx);
 }
 
 static void hwclock_register_callback(hwclock_callback_t cb)

@@ -48,6 +48,13 @@ SECTIONS {
   . = ALIGN(4K);
   __kernel_text_end = .;
 
+/*  .usr.kcall ALIGN(4K) : AT(ADDR (.usr.kcall) - K_HIGH_VMA) {
+     *(.usr.kcall)
+  }
+  . = ALIGN(4K);
+
+*/
+__kernel_bss_start = .;
   .bss ALIGN(4K) : AT(ADDR (.bss) - K_HIGH_VMA){
      *(.bss)
   }

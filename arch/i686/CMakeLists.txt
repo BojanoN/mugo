@@ -37,6 +37,7 @@ set(c_sources
   early.c
   thread.c
   init.c
+  paging_utils.c
   )
 list(TRANSFORM sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 

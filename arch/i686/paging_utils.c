@@ -1,18 +1,71 @@
-#include "./include/arch_paging.h"
+#include <arch/paging.h>
+#include <exec.h>
+#include <kern/util.h>
+#include <stdlib.h>
 
-void bootstrap_on_load(void)
-{
-    // TODO: map sysenter stub page
-}
+#include <sys/elf_base.h>
+#include <types/base.h>
+
+#include <kern/assert.h>
+#include <kern/conf.h>
+#include <kern/kmalloc.h>
+#include <kern/kmem.h>
+#include <kern/kobjs.h>
+
+extern unsigned int K_HIGH_VMA;
+
+__attribute__((section(".ktable"))) page_directory_t boot_page_directory = { 0 };
+__attribute__((section(".ktable"))) page_directory_t page_directory      = { 0 };
+__attribute__((section(".ktable"))) page_table_t     kernel_pt           = { 0 };
+__attribute__((section(".ktable"))) page_table_t     boot_kernel_pt      = { 0 };
+__attribute__((section(".ktable"))) page_table_t     bootstrap_pt        = { 0 };
+__attribute__((section(".ktable"))) page_table_t     module_bootstrap_pt = { 0 };
+
+exec_info_t k_exec_info = {
+    (paddr_t)&page_directory,
+    0,
+    NULL,
+    NULL
+};
+
+static kernel_info_t* kinfo;
+
+/*
+ * Bootstrap paging routines.
+ * Boot module loading routines/structs
+ */
 
 static paddr_t bootstrap_fetch_page(void)
 {
     paddr_t page = kinfo->memmaps[0].addr;
-    ASSERT_MSG(kinfo->memmaps[0].len > ARCH_PAGE_SIZE, "Out of pages");
+    ASSERT_MSG(kinfo->memmaps[0].len > ARCH_PAGE_SIZE, "Out of free frames");
 
     kinfo->memmaps[0].addr += ARCH_PAGE_SIZE;
     kinfo->memmaps[0].len -= ARCH_PAGE_SIZE;
     return page;
+}
+
+paddr_t bootstrap_create_page_dir(void)
+{
+    return bootstrap_fetch_page();
+}
+
+void bootstrap_init_kinfo(kernel_info_t* info)
+{
+    kinfo = info;
+}
+
+void bootstrap_load_boot_mappings(void)
+{
+    paddr_t pd_phys = (paddr_t)((vaddr_t)&boot_page_directory - (vaddr_t)kinfo->kernel_high_vma);
+    arch_load_pagedir(pd_phys);
+}
+
+void bootstrap_load_kernel_mappings(void)
+{
+    paddr_t pd_phys = (paddr_t)((vaddr_t)&page_directory - (vaddr_t)kinfo->kernel_high_vma);
+
+    arch_load_pagedir(pd_phys);
 }
 
 /* Identity mapping of necessary physical memory for initial server modules and paging structures */
@@ -60,26 +113,33 @@ void bootstrap_identity_map_init_mem(kernel_info_t* info)
     arch_load_pagedir(pd_phys);
 }
 
-paddr_t bootstrap_create_page_dir(void)
+void bootstrap_map_boot_modules(void)
 {
-    return bootstrap_fetch_page();
-}
+    paddr_t bootstrap_pt_phys = ((paddr_t)&bootstrap_pt) - (paddr_t)kinfo->kernel_high_vma;
 
-int bootstrap_mmap_elf(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags)
-{
-    unsigned int internal_flags = 0;
+    size_t kernel_pd_offset                  = ((vaddr_t)&K_HIGH_VMA & ARCH_VADDR_PD_OFFSET_MASK) >> ARCH_VADDR_PD_OFFSET;
+    page_directory.entries[kernel_pd_offset] = (((vaddr_t)&kernel_pt - (vaddr_t)&K_HIGH_VMA) & PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
+    page_directory.entries[0]                = ((pd_entry_t)bootstrap_pt_phys & ARCH_PAGE_MASK) | (ARCH_PD_ENTRY_PRESENT | ARCH_PD_ENTRY_RW);
 
-    unsigned int exec = flags & PF_X;
-    unsigned int rd   = flags & PF_R;
-    unsigned int wr   = flags & PF_W;
+    // Identity map first MB for now
+    // Clear bootstrap mappings
+    memset(&bootstrap_pt.entries[0], 0, sizeof(page_table_t));
+    size_t current_pt_offset = 0;
 
-    internal_flags |= KMAP_PROT_EXEC * (exec != 0);
-    internal_flags |= KMAP_PROT_READ * (rd != 0);
-    internal_flags |= KMAP_PROT_WRITE * (wr != 0);
+    for (unsigned int addr = 0; addr < 0x100000; addr += PAGE_SIZE, current_pt_offset++) {
+        bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+    }
 
-    internal_flags |= KMAP_PROT_USER;
-
-    return bootstrap_mmap(info, paddr, vaddr, size, internal_flags);
+    // Identity map loaded modules
+    for (size_t i = 0; i < kinfo->no_modules; i++) {
+        struct boot_module* module = &kinfo->modules[i];
+        current_pt_offset          = (module->start_paddr & ARCH_VADDR_PT_OFFSET_MASK) >> ARCH_VADDR_PT_OFFSET;
+        paddr_t end                = module->end_paddr;
+        for (paddr_t addr = module->start_paddr; addr < end; addr += PAGE_SIZE, current_pt_offset++) {
+            bootstrap_pt.entries[current_pt_offset] = (addr & ARCH_PAGE_MASK) | (ARCH_PAGE_PRESENT | ARCH_PAGE_RW);
+        }
+    }
+    return;
 }
 
 int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags)
@@ -139,7 +199,38 @@ int bootstrap_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size,
         current_pt->entries[pt_offset] = ((frame_addr)&PAGE_MASK) | pg_flags;
     }
 
-    //arch_flush_tlb();
+    // arch_flush_tlb();
 
     return 0;
+}
+
+int bootstrap_elf_mmap(exec_info_t* info, paddr_t paddr, vaddr_t vaddr, size_t size, unsigned int flags)
+{
+    unsigned int internal_flags = 0;
+
+    unsigned int exec = flags & PF_X;
+    unsigned int rd   = flags & PF_R;
+    unsigned int wr   = flags & PF_W;
+
+    internal_flags |= KMAP_PROT_EXEC * (exec != 0);
+    internal_flags |= KMAP_PROT_READ * (rd != 0);
+    internal_flags |= KMAP_PROT_WRITE * (wr != 0);
+
+    internal_flags |= KMAP_PROT_USER;
+
+    return bootstrap_mmap(info, paddr, vaddr, size, internal_flags);
+}
+
+void bootstrap_elf_on_load(exec_info_t* info)
+{
+    //    bootstrap_mmap(info, kinfo->usr_kcall_stub_paddr, CONF_SYSENTER_STUB_BASE_VADDR, PAGE_SIZE, KMAP_PROT_USER | KMAP_PROT_READ | KMAP_PROT_EXEC);
+}
+
+/*
+ * Kernel mapping routines.
+ */
+
+vaddr_t kmap(vaddr_t vaddr, paddr_t paddr, size_t size, unsigned int flags)
+{
+    return bootstrap_mmap(&k_exec_info, paddr, vaddr, size, flags);
 }

@@ -10,7 +10,7 @@ cmake_policy(SET CMP0115 OLD)
 set(TARGET_ARCH i686)
 set(OUTPUT_FILE os.elf)
 
-set(TOOLCHAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/toolchain/llvm/build/bin)
+set(TOOLCHAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/toolchain/bin)
 
 set(CMAKE_C_COMPILER "${TOOLCHAIN_DIR}/clang")
 #set(CMAKE_C_CLANG_TIDY "${TOOLCHAIN_DIR}/clang-tidy;-checks=*")
@@ -26,6 +26,7 @@ target_include_directories(${OUTPUT_FILE} PUBLIC
   )
 
 add_subdirectory(./arch/${TARGET_ARCH})
+add_subdirectory(./sys/arch/${TARGET_ARCH})
 add_subdirectory(./serv/mman)
 
 foreach(ASM_SRC ${asm_preprocess_sources})
@@ -54,24 +55,24 @@ set(kernel_sources
   ./kern/sched.c
   ./kern/sched_rr.c
   ./kern/kcall.c
+  ./kern/crt.c
   )
 list(TRANSFORM kernel_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 
-set(lib_sources
+set(klib_sources
   ./lib/stdlib/stdlib.c
   ./lib/libelf/elf.c
-  ./lib/crt/crt.c
-  ./lib/sys/syscall.c
   )
+list(TRANSFORM klib_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 
-list(TRANSFORM lib_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
+
 
 target_compile_definitions(${OUTPUT_FILE} PRIVATE __MUGO_KERNEL__)
 target_sources(${OUTPUT_FILE}
   PRIVATE
   ${kernel_sources}
-  ${lib_sources}
+  ${klib_sources}
   )
 
 

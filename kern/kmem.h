@@ -10,7 +10,7 @@
 #define KMAP_PROT_USER  0x4 // page is user accessible
 #define KMAP_PROT_EXEC  0x8 // page is executable
 
-void map_kernel_memory(kernel_info_t* info);
+void kmem_map_kernel_memory(kernel_info_t* info);
 void page_fault_handler(irq_context_t registers);
 
 void kmem_init(kernel_info_t* info);

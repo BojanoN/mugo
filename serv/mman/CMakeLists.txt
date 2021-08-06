@@ -13,7 +13,6 @@ target_include_directories(${MMAN_ELF_MODULE} PUBLIC  ../../include ../../arch/$
 
 set(lib_sources
   ../../lib/crt/crt.c
-  ../../lib/sys/syscall.c
   )
 
 set(c_sources
@@ -22,6 +21,7 @@ set(c_sources
 
 target_sources(${MMAN_ELF_MODULE}
   PRIVATE
+  ${kcall_sources}
   ${lib_sources}
   ${c_sources}
   )

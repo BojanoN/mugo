@@ -16,7 +16,6 @@ void arch_sysenter_stub(void);
 
 void arch_init(void)
 {
-
     init_gdt();
     PIC_init();
     init_idt();
@@ -26,5 +25,5 @@ void arch_init(void)
     // Configure sysenter
     msr_write(I386_SYSENTER_CS, 0x8);
     msr_write(I386_SYSENTER_EIP, (uint32_t)&arch_sysenter_stub);
-    msr_write(I386_SYSENTER_ESP, (uint32_t)&tss.sp0);
+    msr_write(I386_SYSENTER_ESP, (uint32_t)tss.sp0);
 }

@@ -173,7 +173,7 @@ unsigned int vsprintf_s(char* dstbuf, size_t size, const char* fmt, va_list args
         }
     }
 
-    //flush:
+    // flush:
     *dstbuf++ = '\0';
 
     return written;

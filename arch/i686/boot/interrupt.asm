@@ -1,4 +1,4 @@
- extern kstack_top, arch_current_thread_execution_ctx 
+ extern kstack_top, __current_thread_execution_ctx 
 
  global arch_return_to_user
 
@@ -75,9 +75,7 @@ irq_common:
   	 call interrupt_handler
 
 arch_return_to_user:
-
-
-     mov esp, dword [arch_current_thread_execution_ctx]
+     mov esp, dword [__current_thread_execution_ctx]
 
 	   pop eax
 	   mov ds, ax

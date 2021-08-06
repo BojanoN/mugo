@@ -6,11 +6,12 @@
 
 #define KPRINT_BUFF_LEN 1024
 
+static va_list args;
+
 unsigned int kprintf(const char* fmt, ...)
 {
     char buff[KPRINT_BUFF_LEN];
 
-    va_list args;
     va_start(args, fmt);
 
     unsigned int print_size = vsprintf_s(buff, KPRINT_BUFF_LEN, fmt, args);

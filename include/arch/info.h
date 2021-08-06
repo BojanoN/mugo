@@ -39,4 +39,5 @@ typedef struct {
 
     size_t kernel_size_bytes; /* used by kernel */
     size_t kernel_allocated_bytes_dynamic; /* used by kernel (runtime) */
+
 } kernel_info_t;

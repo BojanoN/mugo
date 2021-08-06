@@ -1,4 +1,4 @@
-//TODO: #include <log.h>
+// TODO: #include <log.h>
 #include <arch/paging.h>
 #include <exec.h>
 #include <stdlib.h>
@@ -89,8 +89,8 @@ int elf_ctx_load(elf_ctx_t* ctx, exec_info_t* info)
 
     size_t no_pheaders = ctx->elf_hdr->e_phnum;
 
-    //
-    info->on_load();
+    // ASSERT(info->on_load)
+    info->on_load(info);
 
     for (size_t i = 0; i < no_pheaders; i++) {
         Elf_Phdr* phdr = &ctx->program_headers[i];

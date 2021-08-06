@@ -1,10 +1,16 @@
+#include <meminfo.h>
 #include <sys/syscall.h>
 
-int x = 1;
+static struct sys_meminfo meminfo = { 0 };
 
 void main(void)
 {
-    syscall(0, "asdf", 0);
+    int err;
+
+    kcall_debug("TEST");
+
+    err = kcall_meminfo(&meminfo);
+
     while (1) {
     }
 }

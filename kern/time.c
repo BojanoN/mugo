@@ -6,7 +6,7 @@
 
 extern hwclock_t hwclock;
 
-void ktime_init(void (*timer_callback)(void))
+void ktime_init(void (*timer_callback)(irq_context_t*))
 {
     hwclock.hwclock_register_callback(timer_callback);
     hwclock.hwclock_init(CONF_SCHED_TICK_FREQ_HZ);

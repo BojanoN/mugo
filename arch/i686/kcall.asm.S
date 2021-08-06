@@ -2,10 +2,9 @@
   #include "include/arch_conf.h"
 
   global arch_sysenter_stub
-  extern kcall_handler, kstub_ret_vaddr, kcall_table, NO_KCALLS
-  bits 32
 
-  kstub_ret_vaddr equ CONF_SYSENTER_STUB_RET_VADDR
+  extern kcall_handler,  kcall_table, NO_KCALLS
+  bits 32
 
 ;; SYSENTER kernel entry stub
 ;  %eax kcall number
@@ -13,14 +12,13 @@
 ;  %ecx arg2
 ;  %edx arg3
 ;  %esi arg4
-;  %edi arg5
+;  %edi return eip
 ;  %ebp user stack
 ;; note: sysenter masks interrupts by default
 arch_sysenter_stub:
-
   push ebp
-
   push edi
+
   push esi
   push edx
   push ecx
@@ -35,8 +33,11 @@ arch_sysenter_stub:
 
 .ret:
   ;; set return EIP and ESP
-  ;; pop the ebp we saved before
+  ;; pop the esp we saved before
+  add esp, 0x18
+  pop edx
   pop ecx
-  mov edx, kstub_ret_vaddr
 
+  sti
   sysexit
+

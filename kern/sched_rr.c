@@ -11,7 +11,7 @@
 
 #define READY_QUEUE_LEN 16
 
-static void   rr_tick_handler(void);
+static void   rr_tick_handler(irq_context_t*);
 static void   rr_init(proc_t*, size_t);
 static void   rr_schedule(void);
 static void   rr_idle(void);
@@ -67,14 +67,14 @@ static void rr_enqueue(tcb_t* thread)
     rr_move_to_ready(thread);
 }
 
-static void rr_tick_handler(void)
+static void rr_tick_handler(irq_context_t* irq_ctx)
 {
-
     log(DEBUG, "schedRR tick");
 
     // TODO: handle NULL
     if (current_thread) {
         time_sub_nsec(&current_thread->sched_ctx.quantum_nsec, nsec_to_next_tick ? nsec_to_next_tick : sched_tick_nsec());
+        arch_update_exec_ctx(irq_ctx);
         rr_schedule();
     }
 

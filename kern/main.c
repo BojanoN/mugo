@@ -20,7 +20,7 @@
 #include "sched.h"
 #include "time.h"
 
-static kernel_info_t kinfo;
+kernel_info_t kinfo;
 
 void arch_init(void);
 void arch_return_to_user(void);
@@ -40,7 +40,8 @@ void load_boot_modules(void)
     // identity map the necessary memory range for easier initialization
     ASSERT_MSG(no_modules < CONF_MAX_BOOT_MODULES, "Too much boot modules loaded");
 
-    info.mmap = bootstrap_mmap_elf;
+    info.mmap    = bootstrap_elf_mmap;
+    info.on_load = bootstrap_elf_on_load;
 
     for (size_t i = 0; i < no_modules; i++) {
 
@@ -111,6 +112,7 @@ void bootstrap(kernel_info_t* info)
     bootstrap_identity_map_init_mem(&kinfo);
     load_boot_modules();
 
+    // TODO: this is fishy, refactor this
     kmem_init_cleanup();
 
     arch_init();
