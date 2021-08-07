@@ -47,7 +47,6 @@ set(kernel_sources
   ./kern/main.c
   ./kern/time.c
   ./kern/util.c
-  ./kern/sys.c
   ./kern/proc.c
   ./kern/panic.c
   ./kern/kmem.c

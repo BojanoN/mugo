@@ -1,5 +1,5 @@
 #include "proc.h"
-#include "sys.h"
+
 #include "util.h"
 
 /*

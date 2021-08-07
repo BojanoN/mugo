@@ -28,7 +28,6 @@ set(c_sources
   panic.c
   interrupt.c
   boot/gdt.c
-  util.c
   config
   idt.c
   drivers/vga.c
@@ -47,7 +46,6 @@ set(asm_sources
   boot/load_tables.asm
   boot/boot.asm
   boot/interrupt.asm
-  thread_asm.asm
   trace.asm
   )
 list(TRANSFORM asm_sources PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
